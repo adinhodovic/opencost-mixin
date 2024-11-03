@@ -1,0 +1,36 @@
+# yamllint disable rule:line-length
+---
+rule_files:
+  - prometheus_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'node_total_hourly_cost{job="opencost", node="test-node"}'
+        values: "10x35"
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: OpenCostMonthlyBudgetExceeded
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "OpenCost Monthly Budget Exceeded"
+              description: "The monthly budget for the cluster has been exceeded. Consider scaling down resources or increasing the budget."
+              dashboard_url: "https://grafana.com/d/opencost-mixin-kover-jkwq/opencost-overview"
+  - interval: 1m
+    input_series:
+      - series: pv_hourly_cost{job="opencost", persistentvolume="test-pv"}
+        values: "10x35"
+      - series: kube_persistentvolume_capacity_bytes{job="opencost", persistentvolume="test-pv"}
+        values: "1000000000000x35"
+    alert_rule_test:
+      - eval_time: 35m
+        alertname: OpenCostMonthlyBudgetExceeded
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "OpenCost Monthly Budget Exceeded"
+              description: "The monthly budget for the cluster has been exceeded. Consider scaling down resources or increasing the budget."
+              dashboard_url: "https://grafana.com/d/opencost-mixin-kover-jkwq/opencost-overview"
