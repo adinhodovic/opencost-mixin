@@ -16,6 +16,8 @@ local annotation = g.dashboard.annotation;
 
     openCostOverviewDashboardUid: 'opencost-mixin-kover-jkwq',
     openCostOverviewDashboardUrl: '%s/d/%s/opencost-overview' % [this.grafanaUrl, this.openCostOverviewDashboardUid],
+    openCostNamespaceDashboardUid: 'opencost-mixin-namespace-jkwq',
+    openCostNamespaceDashboardUrl: '%s/d/%s/opencost-namespace' % [this.grafanaUrl, this.openCostNamespaceDashboardUid],
 
     alerts: {
       budget: {

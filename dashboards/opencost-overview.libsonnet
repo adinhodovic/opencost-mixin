@@ -111,6 +111,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
+      stStandardOptions.withDecimals(2) +
       stOptions.reduceOptions.withCalcs(['lastNotNull']) +
       stOptions.withGraphMode('none') +
       stOptions.withShowPercentChange(true) +
@@ -136,6 +137,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
+      stStandardOptions.withDecimals(2) +
       stOptions.reduceOptions.withCalcs(['lastNotNull']) +
       stOptions.withGraphMode('none') +
       stOptions.withShowPercentChange(true) +
@@ -160,6 +162,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
+      stStandardOptions.withDecimals(2) +
       stOptions.reduceOptions.withCalcs(['lastNotNull']) +
       stOptions.withGraphMode('none') +
       stOptions.withShowPercentChange(true) +
@@ -202,6 +205,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
+      stStandardOptions.withDecimals(2) +
       stOptions.reduceOptions.withCalcs(['lastNotNull']) +
       stOptions.withGraphMode('none') +
       stOptions.withShowPercentChange(true) +
@@ -243,6 +247,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
+      stStandardOptions.withDecimals(2) +
       stOptions.reduceOptions.withCalcs(['lastNotNull']) +
       stOptions.withGraphMode('none') +
       stOptions.withShowPercentChange(true) +
@@ -282,6 +287,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
+      stStandardOptions.withDecimals(2) +
       stOptions.reduceOptions.withCalcs(['lastNotNull']) +
       stOptions.withGraphMode('none') +
       stOptions.withShowPercentChange(true) +

@@ -1,1 +1,2 @@
-(import 'opencost.libsonnet')
+(import 'opencost-overview.libsonnet') +
+(import 'opencost-namespace.libsonnet')
