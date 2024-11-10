@@ -34,3 +34,17 @@ tests:
               summary: "OpenCost Monthly Budget Exceeded"
               description: "The monthly budget for the cluster has been exceeded. Consider scaling down resources or increasing the budget."
               dashboard_url: "https://grafana.com/d/opencost-mixin-kover-jkwq/opencost-overview"
+  - interval: 1h
+    input_series:
+      - series: 'node_total_hourly_cost{job="opencost", node="test-node"}'
+        values: "1x3 2000x3"
+    alert_rule_test:
+      - eval_time: 6h
+        alertname: OpenCostAnomalyDetected
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "OpenCost Cost Anomaly Detected"
+              description: "A significant increase in cluster costs has been detected. The average hourly cost over the last day exceeds the 7-day average by more than 20%. This could indicate unexpected resource usage or cost-related changes in the cluster."
+              dashboard_url: "https://grafana.com/d/opencost-mixin-kover-jkwq/opencost-overview"

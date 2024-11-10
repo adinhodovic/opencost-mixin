@@ -77,7 +77,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       namespaceVariable,
     ],
 
-    local openCostNamespaceHourlyCostQuery = |||
+    local openCostHourlyCostQuery = |||
       sum(
         sum(
           container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"}
@@ -109,14 +109,14 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       ) by (namespace)
     |||,
 
-    local openCostNamespaceHourlyCostStatPanel =
+    local openCostHourlyCostStatPanel =
       statPanel.new(
         'Hourly Cost',
       ) +
       stQueryOptions.withTargets(
         prometheus.new(
           '$datasource',
-          openCostNamespaceHourlyCostQuery,
+          openCostHourlyCostQuery,
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
@@ -133,16 +133,16 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       ]),
 
 
-    local openCostNamespaceDailyCostQuery = std.strReplace(openCostNamespaceHourlyCostQuery, '* 1', '* 24'),
+    local openCostDailyCostQuery = std.strReplace(openCostHourlyCostQuery, '* 1', '* 24'),
 
-    local openCostNamespaceDailyCostStatPanel =
+    local openCostDailyCostStatPanel =
       statPanel.new(
         'Daily Cost',
       ) +
       stQueryOptions.withTargets(
         prometheus.new(
           '$datasource',
-          openCostNamespaceDailyCostQuery,
+          openCostDailyCostQuery,
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
@@ -158,16 +158,16 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         stStandardOptions.threshold.step.withColor('green'),
       ]),
 
-    local openCostNamespaceMonthlyCostQuery = std.strReplace(openCostNamespaceHourlyCostQuery, '* 1', '* 730'),
+    local openCostMonthlyCostQuery = std.strReplace(openCostHourlyCostQuery, '* 1', '* 730'),
 
-    local openCostNamespaceMonthlyCostStatPanel =
+    local openCostMonthlyCostStatPanel =
       statPanel.new(
         'Monthly Cost',
       ) +
       stQueryOptions.withTargets(
         prometheus.new(
           '$datasource',
-          openCostNamespaceMonthlyCostQuery,
+          openCostMonthlyCostQuery,
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
@@ -183,7 +183,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         stStandardOptions.threshold.step.withColor('green'),
       ]),
 
-    local openCostNamespaceMonthlyRamCostQuery = |||
+    local openCostMonthlyRamCostQuery = |||
       sum(
         sum(
           container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"}
@@ -201,14 +201,14 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       )
     |||,
 
-    local openCostNamespaceMonthlyRamCostStatPanel =
+    local openCostMonthlyRamCostStatPanel =
       statPanel.new(
         'Monthly Ram Cost',
       ) +
       stQueryOptions.withTargets(
         prometheus.new(
           '$datasource',
-          openCostNamespaceMonthlyRamCostQuery,
+          openCostMonthlyRamCostQuery,
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
@@ -224,7 +224,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         stStandardOptions.threshold.step.withColor('green'),
       ]),
 
-    local openCostNamespaceMonthlyCpuCostQuery = |||
+    local openCostMonthlyCpuCostQuery = |||
       sum(
         sum(
           container_cpu_allocation{job=~"$job", namespace=~"$namespace"}
@@ -242,14 +242,14 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       )
     |||,
 
-    local openCostNamespaceMonthlyCpuCostStatPanel =
+    local openCostMonthlyCpuCostStatPanel =
       statPanel.new(
         'Monthly CPU Cost',
       ) +
       stQueryOptions.withTargets(
         prometheus.new(
           '$datasource',
-          openCostNamespaceMonthlyCpuCostQuery,
+          openCostMonthlyCpuCostQuery,
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
@@ -265,31 +265,33 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         stStandardOptions.threshold.step.withColor('green'),
       ]),
 
-    local openCostNamespaceMonthlyPVCostQuery = |||
+    local openCostMonthlyPVCostQuery = |||
       sum(
         sum(
-          label_replace(
-            kube_persistentvolume_capacity_bytes{job=~"$job"},
-            "volumename", "$1", "persistentvolume", "(.*)"
-          ) / 1024 / 1024 / 1024
-        ) by (volumename)
+          kube_persistentvolume_capacity_bytes{job=~"$job"}
+          / 1024 / 1024 / 1024
+        ) by (persistentvolume)
         *
         sum(
           pv_hourly_cost{job=~"$job"}
         ) by (persistentvolume)
-      ) * on(volumename) group_left(namespace) (
-        kube_persistentvolumeclaim_info{job=~"$job", namespace=~"$namespace"}
+        * on(persistentvolume) group_left(namespace) (
+          label_replace(
+            kube_persistentvolumeclaim_info{job=~"$job", namespace=~"$namespace"},
+            "persistentvolume", "$1", "volumename", "(.*)"
+          )
+        )
       ) * 730
     |||,
 
-    local openCostNamespaceMonthlyPVCostStatPanel =
+    local openCostMonthlyPVCostStatPanel =
       statPanel.new(
         'Monthly PV Cost',
       ) +
       stQueryOptions.withTargets(
         prometheus.new(
           '$datasource',
-          openCostNamespaceMonthlyPVCostQuery,
+          openCostMonthlyPVCostQuery,
         )
       ) +
       stStandardOptions.withUnit('currencyUSD') +
@@ -305,490 +307,497 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         stStandardOptions.threshold.step.withColor('green'),
       ]),
 
-    // local openCostNodeMonthlyCpuCostQuery = |||
-    //   sum(
-    //     kube_node_status_capacity{
-    //       job=~"$job",
-    //       resource="cpu",
-    //       unit="core"
-    //     }
-    //   ) by (node)
-    //   *
-    //   on(node) group_left(instance_type, arch)
-    //   sum(
-    //     node_cpu_hourly_cost{
-    //       job=~"$job"
-    //     }
-    //   ) by (node, instance_type, arch)
-    //   * 730
-    // |||,
-    //
-    // local openCostNodeMonthlyRamCostQuery = |||
-    //   sum(
-    //     kube_node_status_capacity{
-    //       job=~"$job",
-    //       resource="memory",
-    //       unit="byte"
-    //     }
-    //   ) by (node)
-    //   / 1024 / 1024 / 1024
-    //   *
-    //   on(node) group_left(instance_type, arch)
-    //   sum(
-    //     node_ram_hourly_cost{
-    //       job=~"$job"
-    //     }
-    //   ) by (node, instance_type, arch)
-    //   * 730
-    // |||,
-    //
-    // local openCostHourlyCostTimeSeriesPanel =
-    //   timeSeriesPanel.new(
-    //     'Hourly Cost',
-    //   ) +
-    //   tsQueryOptions.withTargets(
-    //     [
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostHourlyCostQuery,
-    //       ) +
-    //       prometheus.withLegendFormat('Hourly Cost') +
-    //       prometheus.withInterval('1m'),
-    //     ]
-    //   ) +
-    //   tsStandardOptions.withUnit('currencyUSD') +
-    //   tsLegend.withShowLegend(false) +
-    //   tsCustom.withSpanNulls(false),
-    //
-    // local openCostDailyCostTimeSeriesPanel =
-    //   timeSeriesPanel.new(
-    //     'Daily Cost',
-    //   ) +
-    //   tsQueryOptions.withTargets(
-    //     [
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostDailyCostQuery,
-    //       ) +
-    //       prometheus.withLegendFormat('Daily Cost') +
-    //       prometheus.withInterval('1m'),
-    //     ]
-    //   ) +
-    //   tsStandardOptions.withUnit('currencyUSD') +
-    //   tsLegend.withShowLegend(false) +
-    //   tsCustom.withSpanNulls(false),
-    //
-    // local openCostMonthlyCostTimeSeriesPanel =
-    //   timeSeriesPanel.new(
-    //     'Monthly Cost',
-    //   ) +
-    //   tsQueryOptions.withTargets(
-    //     [
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostMonthlyCostQuery,
-    //       ) +
-    //       prometheus.withLegendFormat('Monthly Cost') +
-    //       prometheus.withInterval('1m'),
-    //     ]
-    //   ) +
-    //   tsStandardOptions.withUnit('currencyUSD') +
-    //   tsLegend.withShowLegend(false) +
-    //   tsCustom.withSpanNulls(false),
-    //
-    //
-    // local openCostResourceCostPieChartPanel =
-    //   pieChartPanel.new(
-    //     'Cost by Resource'
-    //   ) +
-    //   pieQueryOptions.withTargets(
-    //     [
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostMonthlyCpuCostQuery,
-    //       ) +
-    //       prometheus.withLegendFormat('CPU') +
-    //       prometheus.withInstant(true),
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostMonthlyRamCostQuery,
-    //       ) +
-    //       prometheus.withLegendFormat('RAM') +
-    //       prometheus.withInstant(true),
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostMonthlyPVCostQuery,
-    //       ) +
-    //       prometheus.withLegendFormat('PV') +
-    //       prometheus.withInstant(true),
-    //     ]
-    //   ) +
-    //   pieOptions.withPieType('pie') +
-    //   pieStandardOptions.withUnit('currencyUSD') +
-    //   pieOptions.legend.withAsTable(true) +
-    //   pieOptions.legend.withPlacement('right') +
-    //   pieOptions.legend.withDisplayMode('table') +
-    //   pieOptions.legend.withValues(['value', 'percent']) +
-    //   pieOptions.legend.withSortDesc(true),
-    //
-    // local openCostNamespaceMonthlyCostQuery = |||
-    //   topk(10,
-    //     sum(
-    //       sum(
-    //         container_memory_allocation_bytes{job=~"$job"}
-    //       )
-    //       by (namespace, instance)
-    //       * on(instance) group_left() (
-    //         node_ram_hourly_cost{job=~"$job"}
-    //         / 1024 / 1024 / 1024 * 730
-    //         + on(node,instance_type) group_left()
-    //         label_replace
-    //         (
-    //           kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-    //         ) * 0
-    //       )
-    //       +
-    //       sum(
-    //         container_cpu_allocation{job=~"$job"}
-    //       )
-    //       by (namespace,instance)
-    //       * on(instance) group_left() (
-    //         node_cpu_hourly_cost{job=~"$job"}
-    //         * 730
-    //         + on(node, instance_type) group_left()
-    //         label_replace
-    //         (
-    //           kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-    //         ) * 0
-    //       )
-    //     ) by (namespace)
-    //   )
-    // |||,
-    //
-    // local openCostNamespaceCostPieChartPanel =
-    //   pieChartPanel.new(
-    //     'Cost by Namespace'
-    //   ) +
-    //   pieQueryOptions.withTargets(
-    //     prometheus.new(
-    //       '$datasource',
-    //       openCostNamespaceMonthlyCostQuery,
-    //     ) +
-    //     prometheus.withLegendFormat('{{ namespace }}') +
-    //     prometheus.withInstant(true),
-    //   ) +
-    //   pieOptions.withPieType('pie') +
-    //   pieStandardOptions.withUnit('currencyUSD') +
-    //   pieOptions.legend.withAsTable(true) +
-    //   pieOptions.legend.withPlacement('right') +
-    //   pieOptions.legend.withDisplayMode('table') +
-    //   pieOptions.legend.withValues(['value', 'percent']) +
-    //   pieOptions.legend.withSortDesc(true),
-    //
-    // local openCostInstanceTypeCostQuery = |||
-    //   topk(10,
-    //     sum(
-    //       node_total_hourly_cost{
-    //         job=~"$job"
-    //       }
-    //     ) by (instance_type) * 730
-    //   )
-    // |||,
-    //
-    // local openCostInstanceTypeCostPieChartPanel =
-    //   pieChartPanel.new(
-    //     'Cost by Instance Type'
-    //   ) +
-    //   pieQueryOptions.withTargets(
-    //     prometheus.new(
-    //       '$datasource',
-    //       openCostInstanceTypeCostQuery,
-    //     ) +
-    //     prometheus.withLegendFormat('{{ instance_type }}') +
-    //     prometheus.withInstant(true),
-    //   ) +
-    //   pieOptions.withPieType('pie') +
-    //   pieStandardOptions.withUnit('currencyUSD') +
-    //   pieOptions.legend.withAsTable(true) +
-    //   pieOptions.legend.withPlacement('right') +
-    //   pieOptions.legend.withDisplayMode('table') +
-    //   pieOptions.legend.withValues(['value', 'percent']) +
-    //   pieOptions.legend.withSortDesc(true),
-    //
-    // local openCostNodeTotalCostQuery = |||
-    //   sum(
-    //     node_total_hourly_cost{
-    //       job=~"$job"
-    //     }
-    //   ) by (node, instance_type, arch)
-    //   * 730
-    // |||,
-    //
-    // local openCostNodeTable =
-    //   tablePanel.new(
-    //     'Nodes Monthly Cost',
-    //   ) +
-    //   tbStandardOptions.withUnit('currencyUSD') +
-    //   tbOptions.withSortBy(
-    //     tbOptions.sortBy.withDisplayName('Total Cost') +
-    //     tbOptions.sortBy.withDesc(true)
-    //   ) +
-    //   tbOptions.footer.withEnablePagination(true) +
-    //   tbQueryOptions.withTargets(
-    //     [
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostNodeMonthlyCpuCostQuery,
-    //       ) +
-    //       prometheus.withInstant(true) +
-    //       prometheus.withFormat('table'),
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostNodeMonthlyRamCostQuery,
-    //       ) +
-    //       prometheus.withInstant(true) +
-    //       prometheus.withFormat('table'),
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostNodeTotalCostQuery,
-    //       ) +
-    //       prometheus.withInstant(true) +
-    //       prometheus.withFormat('table'),
-    //     ]
-    //   ) +
-    //   tbQueryOptions.withTransformations([
-    //     tbQueryOptions.transformation.withId(
-    //       'merge'
-    //     ),
-    //     tbQueryOptions.transformation.withId(
-    //       'organize'
-    //     ) +
-    //     tbQueryOptions.transformation.withOptions(
-    //       {
-    //         renameByName: {
-    //           node: 'Node',
-    //           instance_type: 'Instance Type',
-    //           arch: 'Architecture',
-    //           'Value #A': 'CPU Cost',
-    //           'Value #B': 'RAM Cost',
-    //           'Value #C': 'Total Cost',
-    //         },
-    //         indexByName: {
-    //           node: 0,
-    //           instance_type: 1,
-    //           arch: 2,
-    //           'Value #A': 3,
-    //           'Value #B': 4,
-    //           'Value #C': 5,
-    //         },
-    //         excludeByName: {
-    //           Time: true,
-    //           job: true,
-    //         },
-    //       }
-    //     ),
-    //   ]),
-    //
-    // local openCostPVTotalGibQuery = |||
-    //   sum(
-    //     kube_persistentvolume_capacity_bytes{
-    //       job=~"$job"
-    //     }
-    //     / 1024 / 1024 / 1024
-    //   ) by (persistentvolume)
-    // |||,
-    //
-    // local openCostPVMonthlyCostQuery = |||
-    //   sum(
-    //     kube_persistentvolume_capacity_bytes{
-    //         job=~"$job"
-    //       }
-    //     / 1024 / 1024 / 1024
-    //   ) by (persistentvolume)
-    //   *
-    //   sum(
-    //     pv_hourly_cost{
-    //       job=~"$job"
-    //     }
-    //     * 730
-    //   ) by (persistentvolume)
-    // |||,
-    //
-    // local openCostPVTable =
-    //   tablePanel.new(
-    //     'Persistent Volumes Monthly Cost'
-    //   ) +
-    //   tbStandardOptions.withUnit('decgbytes') +
-    //   tbOptions.withSortBy(
-    //     tbOptions.sortBy.withDisplayName('Total Cost') +
-    //     tbOptions.sortBy.withDesc(true)
-    //   ) +
-    //   tbOptions.footer.withEnablePagination(true) +
-    //   tbQueryOptions.withTargets(
-    //     [
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostPVTotalGibQuery,
-    //       ) +
-    //       prometheus.withInstant(true) +
-    //       prometheus.withFormat('table'),
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostPVMonthlyCostQuery,
-    //       ) +
-    //       prometheus.withInstant(true) +
-    //       prometheus.withFormat('table'),
-    //     ]
-    //   ) +
-    //   tbQueryOptions.withTransformations([
-    //     tbQueryOptions.transformation.withId(
-    //       'merge'
-    //     ),
-    //     tbQueryOptions.transformation.withId(
-    //       'organize'
-    //     ) +
-    //     tbQueryOptions.transformation.withOptions(
-    //       {
-    //         renameByName: {
-    //           persistentvolume: 'Persistent Volume',
-    //           'Value #A': 'Total GiB',
-    //           'Value #B': 'Total Cost',
-    //         },
-    //         indexByName: {
-    //           persistentvolume: 0,
-    //           'Value #A': 1,
-    //           'Value #B': 2,
-    //         },
-    //         excludeByName: {
-    //           Time: true,
-    //           job: true,
-    //         },
-    //       }
-    //     ),
-    //   ]) +
-    //   tbStandardOptions.withOverrides([
-    //     tbOverride.byName.new('Total Cost') +
-    //     tbOverride.byName.withPropertiesFromOptions(
-    //       tbStandardOptions.withUnit('currencyUSD')
-    //     ),
-    //   ]),
-    //
-    // local openCostNamespaceMonthlyCostQueryOffset7d = std.strReplace(openCostNamespaceMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 7d'),
-    // local openCostNamespaceMonthlyCostQueryOffset30d = std.strReplace(openCostNamespaceMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 30d'),
-    //
-    // local openCostNamespaceTable =
-    //   tablePanel.new(
-    //     'Namespace Monthly Cost',
-    //   ) +
-    //   tbStandardOptions.withUnit('currencyUSD') +
-    //   tbStandardOptions.thresholds.withSteps([
-    //     tbStandardOptions.threshold.step.withValue(0) +
-    //     tbStandardOptions.threshold.step.withColor('green'),
-    //     tbStandardOptions.threshold.step.withValue(5) +
-    //     tbStandardOptions.threshold.step.withColor('yellow'),
-    //     tbStandardOptions.threshold.step.withValue(10) +
-    //     tbStandardOptions.threshold.step.withColor('red'),
-    //   ]) +
-    //   tbOptions.withSortBy(
-    //     tbOptions.sortBy.withDisplayName('Total Cost (Today)') +
-    //     tbOptions.sortBy.withDesc(true)
-    //   ) +
-    //   tbOptions.footer.withEnablePagination(true) +
-    //   tbQueryOptions.withTargets(
-    //     [
-    //       prometheus.new(
-    //         '$datasource',
-    //         openCostNamespaceMonthlyCostQuery,
-    //       ) +
-    //       prometheus.withInstant(true) +
-    //       prometheus.withFormat('table'),
-    //       prometheus.new(
-    //         '$datasource',
-    //         |||
-    //           %s
-    //           /
-    //           %s
-    //           * 100
-    //           - 100
-    //         ||| % [
-    //           openCostNamespaceMonthlyCostQuery,
-    //           openCostNamespaceMonthlyCostQueryOffset7d,
-    //         ],
-    //       ) +
-    //       prometheus.withInstant(true) +
-    //       prometheus.withFormat('table'),
-    //       prometheus.new(
-    //         '$datasource',
-    //         |||
-    //           %s
-    //           /
-    //           %s
-    //           * 100
-    //           - 100
-    //         ||| % [
-    //           openCostNamespaceMonthlyCostQuery,
-    //           openCostNamespaceMonthlyCostQueryOffset30d,
-    //         ],
-    //       ) +
-    //       prometheus.withInstant(true) +
-    //       prometheus.withFormat('table'),
-    //     ]
-    //   ) +
-    //   tbQueryOptions.withTransformations([
-    //     tbQueryOptions.transformation.withId(
-    //       'merge'
-    //     ),
-    //     tbQueryOptions.transformation.withId(
-    //       'organize'
-    //     ) +
-    //     tbQueryOptions.transformation.withOptions(
-    //       {
-    //         renameByName: {
-    //           namespace: 'Namespace',
-    //           'Value #A': 'Total Cost (Today)',
-    //           'Value #B': 'Cost Difference (7d)',
-    //           'Value #C': 'Cost Difference (30d)',
-    //         },
-    //         indexByName: {
-    //           namespace: 0,
-    //           'Value #A': 1,
-    //           'Value #B': 2,
-    //           'Value #C': 3,
-    //         },
-    //         excludeByName: {
-    //           Time: true,
-    //           job: true,
-    //         },
-    //       }
-    //     ),
-    //   ]) +
-    //   tbStandardOptions.withOverrides([
-    //     tbOverride.byName.new('Cost Difference (7d)') +
-    //     tbOverride.byName.withPropertiesFromOptions(
-    //       tbStandardOptions.withUnit('percent') +
-    //       tbFieldConfig.defaults.custom.withCellOptions(
-    //         { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
-    //       ) +
-    //       tbStandardOptions.color.withMode('thresholds')
-    //     ),
-    //     tbOverride.byName.new('Cost Difference (30d)') +
-    //     tbOverride.byName.withPropertiesFromOptions(
-    //       tbStandardOptions.withUnit('percent') +
-    //       tbFieldConfig.defaults.custom.withCellOptions(
-    //         { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
-    //       ) +
-    //       tbStandardOptions.color.withMode('thresholds')
-    //     ),
-    //   ]),
+    local openCostDailyCostTimeSeriesPanel =
+      timeSeriesPanel.new(
+        'Daily Cost',
+      ) +
+      tsQueryOptions.withTargets(
+        [
+          prometheus.new(
+            '$datasource',
+            openCostDailyCostQuery,
+          ) +
+          prometheus.withLegendFormat('Daily Cost') +
+          prometheus.withInterval('1m'),
+        ]
+      ) +
+      tsStandardOptions.withUnit('currencyUSD') +
+      tsLegend.withShowLegend(false) +
+      tsCustom.withSpanNulls(false),
 
-    local openCostNamespaceSummaryRow =
+    local openCostMonthlyCostTimeSeriesPanel =
+      timeSeriesPanel.new(
+        'Monthly Cost',
+      ) +
+      tsQueryOptions.withTargets(
+        [
+          prometheus.new(
+            '$datasource',
+            openCostMonthlyCostQuery,
+          ) +
+          prometheus.withLegendFormat('Monthly Cost') +
+          prometheus.withInterval('1m'),
+        ]
+      ) +
+      tsStandardOptions.withUnit('currencyUSD') +
+      tsLegend.withShowLegend(false) +
+      tsCustom.withSpanNulls(false),
+
+    local openCostResourceCostPieChartPanel =
+      pieChartPanel.new(
+        'Cost by Resource'
+      ) +
+      pieQueryOptions.withTargets(
+        [
+          prometheus.new(
+            '$datasource',
+            openCostMonthlyCpuCostQuery,
+          ) +
+          prometheus.withLegendFormat('CPU') +
+          prometheus.withInstant(true),
+          prometheus.new(
+            '$datasource',
+            openCostMonthlyRamCostQuery,
+          ) +
+          prometheus.withLegendFormat('RAM') +
+          prometheus.withInstant(true),
+          prometheus.new(
+            '$datasource',
+            openCostMonthlyPVCostQuery,
+          ) +
+          prometheus.withLegendFormat('PV') +
+          prometheus.withInstant(true),
+        ]
+      ) +
+      pieOptions.withPieType('pie') +
+      pieStandardOptions.withUnit('currencyUSD') +
+      pieOptions.legend.withAsTable(true) +
+      pieOptions.legend.withPlacement('right') +
+      pieOptions.legend.withDisplayMode('table') +
+      pieOptions.legend.withValues(['value', 'percent']) +
+      pieOptions.legend.withSortDesc(true),
+
+    local openCostPodMonthlyCostQuery = |||
+      topk(10,
+        sum(
+          sum(container_memory_allocation_bytes{job="$job", namespace=~"$namespace"}) by (instance, pod)
+          * on(instance) group_left() (
+            node_ram_hourly_cost / 1024 / 1024 / 1024 * 730
+            + on(node, instance_type) group_left()
+            label_replace
+            (
+              kube_node_labels{job="$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
+            ) * 0
+          )
+          +
+          sum(container_cpu_allocation{job="$job", namespace=~"$namespace"}) by (instance, pod)
+          * on(instance) group_left() (
+            node_cpu_hourly_cost{job="$job"} * 730
+            + on(node,instance_type) group_left()
+            label_replace
+            (
+              kube_node_labels{job="$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
+            ) * 0
+          )
+        ) by (pod)
+      )
+    |||,
+
+    local openCostPodMonthlyCostQueryOffset7d = std.strReplace(openCostPodMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 7d'),
+    local openCostPodMonthlyCostQueryOffset30d = std.strReplace(openCostPodMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 30d'),
+
+    local openCostPodTable =
+      tablePanel.new(
+        'Pod Monthly Cost',
+      ) +
+      tbStandardOptions.withUnit('currencyUSD') +
+      tbStandardOptions.thresholds.withSteps([
+        tbStandardOptions.threshold.step.withValue(0) +
+        tbStandardOptions.threshold.step.withColor('green'),
+        tbStandardOptions.threshold.step.withValue(5) +
+        tbStandardOptions.threshold.step.withColor('yellow'),
+        tbStandardOptions.threshold.step.withValue(10) +
+        tbStandardOptions.threshold.step.withColor('red'),
+      ]) +
+      tbOptions.withSortBy(
+        tbOptions.sortBy.withDisplayName('Total Cost (Today)') +
+        tbOptions.sortBy.withDesc(true)
+      ) +
+      tbOptions.footer.withEnablePagination(true) +
+      tbQueryOptions.withTargets(
+        [
+          prometheus.new(
+            '$datasource',
+            openCostPodMonthlyCostQuery,
+          ) +
+          prometheus.withInstant(true) +
+          prometheus.withFormat('table'),
+          prometheus.new(
+            '$datasource',
+            |||
+              %s
+              /
+              %s
+              * 100
+              - 100
+            ||| % [
+              openCostPodMonthlyCostQuery,
+              openCostPodMonthlyCostQueryOffset7d,
+            ],
+          ) +
+          prometheus.withInstant(true) +
+          prometheus.withFormat('table'),
+          prometheus.new(
+            '$datasource',
+            |||
+              %s
+              /
+              %s
+              * 100
+              - 100
+            ||| % [
+              openCostPodMonthlyCostQuery,
+              openCostPodMonthlyCostQueryOffset30d,
+            ],
+          ) +
+          prometheus.withInstant(true) +
+          prometheus.withFormat('table'),
+        ]
+      ) +
+      tbQueryOptions.withTransformations([
+        tbQueryOptions.transformation.withId(
+          'merge'
+        ),
+        tbQueryOptions.transformation.withId(
+          'organize'
+        ) +
+        tbQueryOptions.transformation.withOptions(
+          {
+            renameByName: {
+              pod: 'Pod',
+              'Value #A': 'Total Cost (Today)',
+              'Value #B': 'Cost Difference (7d)',
+              'Value #C': 'Cost Difference (30d)',
+            },
+            indexByName: {
+              pod: 0,
+              'Value #A': 1,
+              'Value #B': 2,
+              'Value #C': 3,
+            },
+            excludeByName: {
+              Time: true,
+              job: true,
+            },
+          }
+        ),
+      ]) +
+      tbStandardOptions.withOverrides([
+        tbOverride.byName.new('Cost Difference (7d)') +
+        tbOverride.byName.withPropertiesFromOptions(
+          tbStandardOptions.withUnit('percent') +
+          tbFieldConfig.defaults.custom.withCellOptions(
+            { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
+          ) +
+          tbStandardOptions.color.withMode('thresholds')
+        ),
+        tbOverride.byName.new('Cost Difference (30d)') +
+        tbOverride.byName.withPropertiesFromOptions(
+          tbStandardOptions.withUnit('percent') +
+          tbFieldConfig.defaults.custom.withCellOptions(
+            { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
+          ) +
+          tbStandardOptions.color.withMode('thresholds')
+        ),
+      ]),
+
+    local openCostPodCostPieChartPanel =
+      pieChartPanel.new(
+        'Cost by Pod'
+      ) +
+      pieQueryOptions.withTargets(
+        prometheus.new(
+          '$datasource',
+          openCostPodMonthlyCostQuery,
+        ) +
+        prometheus.withLegendFormat('{{ pod }}') +
+        prometheus.withInstant(true),
+      ) +
+      pieOptions.withPieType('pie') +
+      pieStandardOptions.withUnit('currencyUSD') +
+      pieOptions.legend.withAsTable(true) +
+      pieOptions.legend.withPlacement('right') +
+      pieOptions.legend.withDisplayMode('table') +
+      pieOptions.legend.withValues(['value', 'percent']) +
+      pieOptions.legend.withSortDesc(true),
+
+    local openCostContainerMonthlyCostQuery = |||
+      topk(10,
+        sum(
+          sum(container_memory_allocation_bytes{job="$job", namespace=~"$namespace"}) by (instance, container)
+          * on(instance) group_left() (
+            node_ram_hourly_cost / 1024 / 1024 / 1024 * 730
+            + on(node,instance_type) group_left()
+            label_replace
+            (
+              kube_node_labels{job="$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
+            ) * 0
+          )
+          +
+          sum(container_cpu_allocation{job="$job", namespace=~"$namespace"}) by (instance, container)
+          * on(instance) group_left() (
+            node_cpu_hourly_cost{job="$job"} * 730
+            + on(node,instance_type) group_left()
+            label_replace
+            (
+              kube_node_labels{job="$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
+            ) * 0
+          )
+        ) by (container)
+      )
+    |||,
+
+    local openCostContainerMonthlyCostQueryOffset7d = std.strReplace(openCostContainerMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 7d'),
+    local openCostContainerMonthlyCostQueryOffset30d = std.strReplace(openCostContainerMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 30d'),
+
+    local openCostContainerTable =
+      tablePanel.new(
+        'Container Monthly Cost',
+      ) +
+      tbStandardOptions.withUnit('currencyUSD') +
+      tbStandardOptions.thresholds.withSteps([
+        tbStandardOptions.threshold.step.withValue(0) +
+        tbStandardOptions.threshold.step.withColor('green'),
+        tbStandardOptions.threshold.step.withValue(5) +
+        tbStandardOptions.threshold.step.withColor('yellow'),
+        tbStandardOptions.threshold.step.withValue(10) +
+        tbStandardOptions.threshold.step.withColor('red'),
+      ]) +
+      tbOptions.withSortBy(
+        tbOptions.sortBy.withDisplayName('Total Cost (Today)') +
+        tbOptions.sortBy.withDesc(true)
+      ) +
+      tbOptions.footer.withEnablePagination(true) +
+      tbQueryOptions.withTargets(
+        [
+          prometheus.new(
+            '$datasource',
+            openCostContainerMonthlyCostQuery,
+          ) +
+          prometheus.withInstant(true) +
+          prometheus.withFormat('table'),
+          prometheus.new(
+            '$datasource',
+            |||
+              %s
+              /
+              %s
+              * 100
+              - 100
+            ||| % [
+              openCostContainerMonthlyCostQuery,
+              openCostContainerMonthlyCostQueryOffset7d,
+            ],
+          ) +
+          prometheus.withInstant(true) +
+          prometheus.withFormat('table'),
+          prometheus.new(
+            '$datasource',
+            |||
+              %s
+              /
+              %s
+              * 100
+              - 100
+            ||| % [
+              openCostContainerMonthlyCostQuery,
+              openCostContainerMonthlyCostQueryOffset30d,
+            ],
+          ) +
+          prometheus.withInstant(true) +
+          prometheus.withFormat('table'),
+        ]
+      ) +
+      tbQueryOptions.withTransformations([
+        tbQueryOptions.transformation.withId(
+          'merge'
+        ),
+        tbQueryOptions.transformation.withId(
+          'organize'
+        ) +
+        tbQueryOptions.transformation.withOptions(
+          {
+            renameByName: {
+              container: 'Container',
+              'Value #A': 'Total Cost (Today)',
+              'Value #B': 'Cost Difference (7d)',
+              'Value #C': 'Cost Difference (30d)',
+            },
+            indexByName: {
+              container: 0,
+              'Value #A': 1,
+              'Value #B': 2,
+              'Value #C': 3,
+            },
+            excludeByName: {
+              Time: true,
+              job: true,
+            },
+          }
+        ),
+      ]) +
+      tbStandardOptions.withOverrides([
+        tbOverride.byName.new('Cost Difference (7d)') +
+        tbOverride.byName.withPropertiesFromOptions(
+          tbStandardOptions.withUnit('percent') +
+          tbFieldConfig.defaults.custom.withCellOptions(
+            { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
+          ) +
+          tbStandardOptions.color.withMode('thresholds')
+        ),
+        tbOverride.byName.new('Cost Difference (30d)') +
+        tbOverride.byName.withPropertiesFromOptions(
+          tbStandardOptions.withUnit('percent') +
+          tbFieldConfig.defaults.custom.withCellOptions(
+            { type: 'color-background' }  // TODO(adinhodovic): Use jsonnet lib
+          ) +
+          tbStandardOptions.color.withMode('thresholds')
+        ),
+      ]),
+
+    local openCostContainerCostPieChartPanel =
+      pieChartPanel.new(
+        'Cost by Container'
+      ) +
+      pieQueryOptions.withTargets(
+        prometheus.new(
+          '$datasource',
+          openCostContainerMonthlyCostQuery,
+        ) +
+        prometheus.withLegendFormat('{{ container }}') +
+        prometheus.withInstant(true),
+      ) +
+      pieOptions.withPieType('pie') +
+      pieStandardOptions.withUnit('currencyUSD') +
+      pieOptions.legend.withAsTable(true) +
+      pieOptions.legend.withPlacement('right') +
+      pieOptions.legend.withDisplayMode('table') +
+      pieOptions.legend.withValues(['value', 'percent']) +
+      pieOptions.legend.withSortDesc(true),
+
+    local openCostPVTotalGibByPvQuery = |||
+      sum(
+        kube_persistentvolume_capacity_bytes{job=~"$job"}
+        / 1024 / 1024 / 1024
+      ) by (persistentvolume)
+      * on(persistentvolume) group_left(namespace) (
+        label_replace(
+          kube_persistentvolumeclaim_info{job=~"$job", namespace=~"$namespace"},
+          "persistentvolume", "$1", "volumename", "(.*)"
+        )
+      )
+    |||,
+
+    local openCostPVMonthlyCostByPvQuery = std.strReplace(openCostMonthlyPVCostQuery, '* 730', 'by (persistentvolume) * 730'),
+
+    local openCostPvTable =
+      tablePanel.new(
+        'Persistent Volumes Monthly Cost'
+      ) +
+      tbStandardOptions.withUnit('decgbytes') +
+      tbOptions.withSortBy(
+        tbOptions.sortBy.withDisplayName('Total Cost') +
+        tbOptions.sortBy.withDesc(true)
+      ) +
+      tbOptions.footer.withEnablePagination(true) +
+      tbQueryOptions.withTargets(
+        [
+          prometheus.new(
+            '$datasource',
+            openCostPVTotalGibByPvQuery,
+          ) +
+          prometheus.withInstant(true) +
+          prometheus.withFormat('table'),
+          prometheus.new(
+            '$datasource',
+            openCostPVMonthlyCostByPvQuery,
+          ) +
+          prometheus.withInstant(true) +
+          prometheus.withFormat('table'),
+        ]
+      ) +
+      tbQueryOptions.withTransformations([
+        tbQueryOptions.transformation.withId(
+          'merge'
+        ),
+        tbQueryOptions.transformation.withId(
+          'organize'
+        ) +
+        tbQueryOptions.transformation.withOptions(
+          {
+            renameByName: {
+              persistentvolume: 'Persistent Volume',
+              'Value #A': 'Total GiB',
+              'Value #B': 'Total Cost',
+            },
+            indexByName: {
+              persistentvolume: 0,
+              'Value #A': 1,
+              'Value #B': 2,
+            },
+            excludeByName: {
+              Time: true,
+              job: true,
+              namespace: true,
+            },
+          }
+        ),
+      ]) +
+      tbStandardOptions.withOverrides([
+        tbOverride.byName.new('Total Cost') +
+        tbOverride.byName.withPropertiesFromOptions(
+          tbStandardOptions.withUnit('currencyUSD')
+        ),
+      ]),
+
+    local openCostPvCostPieChartPanel =
+      pieChartPanel.new(
+        'Cost by PV'
+      ) +
+      pieQueryOptions.withTargets(
+        prometheus.new(
+          '$datasource',
+          openCostPVMonthlyCostByPvQuery,
+        ) +
+        prometheus.withLegendFormat('{{ persistentvolume }}') +
+        prometheus.withInstant(true),
+      ) +
+      pieOptions.withPieType('pie') +
+      pieStandardOptions.withUnit('currencyUSD') +
+      pieOptions.legend.withAsTable(true) +
+      pieOptions.legend.withPlacement('right') +
+      pieOptions.legend.withDisplayMode('table') +
+      pieOptions.legend.withValues(['value', 'percent']) +
+      pieOptions.legend.withSortDesc(true),
+
+    local openCostSummaryRow =
       row.new(
-        title='Namespace Summary',
+        title=' Summary',
       ),
 
-    local openCostCloudResourcesRow =
+    local openCostPodRow =
       row.new(
-        title='Cloud Resources',
+        title='Pod Summary',
+      ),
+
+    local openCostContainerRow =
+      row.new(
+        title='Container Summary',
+      ),
+
+    local openCostPvRow =
+      row.new(
+        title='PV Summary',
       ),
 
     'opencost-mixin-namespace.json':
@@ -796,7 +805,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       dashboard.new(
         'OpenCost / Namespace',
       ) +
-      dashboard.withDescription('A dashboard that monitors OpenCost and focuses on namespace costs. It is created using the [OpenCost-mixin](https://github.com/adinhodovic/opencost-mixin).') +
+      dashboard.withDescription('A dashboard that monitors OpenCost and focuses on namespace costs. It is created using the [opencost-mixin](https://github.com/adinhodovic/opencost-mixin).') +
       dashboard.withUid($._config.openCostNamespaceDashboardUid) +
       dashboard.withTags($._config.tags) +
       dashboard.withTimezone('utc') +
@@ -812,7 +821,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       ) +
       dashboard.withPanels(
         [
-          openCostNamespaceSummaryRow +
+          openCostSummaryRow +
           row.gridPos.withX(0) +
           row.gridPos.withY(0) +
           row.gridPos.withW(24) +
@@ -820,66 +829,85 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         ] +
         grid.makeGrid(
           [
-            openCostNamespaceHourlyCostStatPanel,
-            openCostNamespaceDailyCostStatPanel,
-            openCostNamespaceMonthlyCostStatPanel,
-            openCostNamespaceMonthlyCpuCostStatPanel,
-            openCostNamespaceMonthlyRamCostStatPanel,
-            openCostNamespaceMonthlyPVCostStatPanel,
+            openCostHourlyCostStatPanel,
+            openCostDailyCostStatPanel,
+            openCostMonthlyCostStatPanel,
+            openCostMonthlyCpuCostStatPanel,
+            openCostMonthlyRamCostStatPanel,
+            openCostMonthlyPVCostStatPanel,
           ],
           panelWidth=4,
           panelHeight=3,
           startY=1
-        )
-        // grid.makeGrid(
-        //   [
-        //     openCostHourlyCostTimeSeriesPanel,
-        //     openCostDailyCostTimeSeriesPanel,
-        //     openCostMonthlyCostTimeSeriesPanel,
-        //   ],
-        //   panelWidth=8,
-        //   panelHeight=5,
-        //   startY=5
-        // ) +
-        // grid.makeGrid(
-        //   [
-        //     openCostResourceCostPieChartPanel,
-        //     openCostNamespaceCostPieChartPanel,
-        //     openCostInstanceTypeCostPieChartPanel,
-        //   ],
-        //   panelWidth=8,
-        //   panelHeight=5,
-        //   startY=5
-        // ) +
-        // [
-        //   openCostCloudResourcesRow +
-        //   row.gridPos.withX(0) +
-        //   row.gridPos.withY(15) +
-        //   row.gridPos.withW(24) +
-        //   row.gridPos.withH(1),
-        // ] +
-        // [
-        //   openCostNodeTable +
-        //   tablePanel.gridPos.withX(0) +
-        //   tablePanel.gridPos.withY(16) +
-        //   tablePanel.gridPos.withW(16) +
-        //   tablePanel.gridPos.withH(10),
-        //   openCostPVTable +
-        //   tablePanel.gridPos.withX(16) +
-        //   tablePanel.gridPos.withY(16) +
-        //   tablePanel.gridPos.withW(8) +
-        //   tablePanel.gridPos.withH(10),
-        //   openCostNamespaceSummaryRow +
-        //   row.gridPos.withX(0) +
-        //   row.gridPos.withY(17) +
-        //   row.gridPos.withW(24) +
-        //   row.gridPos.withH(1),
-        //   openCostNamespaceTable +
-        //   tablePanel.gridPos.withX(0) +
-        //   tablePanel.gridPos.withY(18) +
-        //   tablePanel.gridPos.withW(24) +
-        //   tablePanel.gridPos.withH(12),
-        // ]
+        ) +
+        [
+          openCostDailyCostTimeSeriesPanel +
+          timeSeriesPanel.gridPos.withX(0) +
+          timeSeriesPanel.gridPos.withY(4) +
+          timeSeriesPanel.gridPos.withW(9) +
+          timeSeriesPanel.gridPos.withH(5),
+          openCostMonthlyCostTimeSeriesPanel +
+          timeSeriesPanel.gridPos.withX(9) +
+          timeSeriesPanel.gridPos.withY(4) +
+          timeSeriesPanel.gridPos.withW(9) +
+          timeSeriesPanel.gridPos.withH(5),
+          openCostResourceCostPieChartPanel +
+          pieChartPanel.gridPos.withX(18) +
+          pieChartPanel.gridPos.withY(4) +
+          pieChartPanel.gridPos.withW(6) +
+          pieChartPanel.gridPos.withH(5),
+        ] +
+        [
+          openCostPodRow +
+          row.gridPos.withX(0) +
+          row.gridPos.withY(9) +
+          row.gridPos.withW(24) +
+          row.gridPos.withH(1),
+          openCostPodTable +
+          tablePanel.gridPos.withX(0) +
+          tablePanel.gridPos.withY(10) +
+          tablePanel.gridPos.withW(18) +
+          tablePanel.gridPos.withH(10),
+          openCostPodCostPieChartPanel +
+          pieChartPanel.gridPos.withX(18) +
+          pieChartPanel.gridPos.withY(10) +
+          pieChartPanel.gridPos.withW(6) +
+          pieChartPanel.gridPos.withH(10),
+        ] +
+        [
+          openCostContainerRow +
+          row.gridPos.withX(0) +
+          row.gridPos.withY(20) +
+          row.gridPos.withW(24) +
+          row.gridPos.withH(1),
+          openCostContainerTable +
+          tablePanel.gridPos.withX(0) +
+          tablePanel.gridPos.withY(21) +
+          tablePanel.gridPos.withW(18) +
+          tablePanel.gridPos.withH(10),
+          openCostContainerCostPieChartPanel +
+          pieChartPanel.gridPos.withX(18) +
+          pieChartPanel.gridPos.withY(21) +
+          pieChartPanel.gridPos.withW(6) +
+          pieChartPanel.gridPos.withH(10),
+        ] +
+        [
+          openCostPvRow +
+          row.gridPos.withX(0) +
+          row.gridPos.withY(31) +
+          row.gridPos.withW(24) +
+          row.gridPos.withH(1),
+          openCostPvTable +
+          tablePanel.gridPos.withX(0) +
+          tablePanel.gridPos.withY(32) +
+          tablePanel.gridPos.withW(18) +
+          tablePanel.gridPos.withH(10),
+          openCostPvCostPieChartPanel +
+          pieChartPanel.gridPos.withX(18) +
+          pieChartPanel.gridPos.withY(32) +
+          pieChartPanel.gridPos.withW(6) +
+          pieChartPanel.gridPos.withH(10),
+        ]
       ) +
       if $._config.annotation.enabled then
         dashboard.withAnnotations($._config.customAnnotation)

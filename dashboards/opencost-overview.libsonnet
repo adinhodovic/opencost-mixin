@@ -32,6 +32,7 @@ local tbOptions = tablePanel.options;
 local tbStandardOptions = tablePanel.standardOptions;
 local tbQueryOptions = tablePanel.queryOptions;
 local tbFieldConfig = tablePanel.fieldConfig;
+local tbPanelOptions = tablePanel.panelOptions;
 local tbOverride = tbStandardOptions.override;
 
 // Pie Chart
@@ -60,21 +61,9 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       query.refresh.onLoad() +
       query.refresh.onTime(),
 
-    local namespaceVariable =
-      query.new(
-        'namespace',
-        'label_values(kube_namespace_labels, namespace)'
-      ) +
-      query.withDatasourceFromVariable(datasourceVariable) +
-      query.withSort(1) +
-      query.generalOptions.withLabel('Namespace') +
-      query.refresh.onLoad() +
-      query.refresh.onTime(),
-
     local variables = [
       datasourceVariable,
       jobVariable,
-      namespaceVariable,
     ],
 
     local openCostDailyCostQuery = |||
@@ -390,6 +379,128 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       tsLegend.withShowLegend(false) +
       tsCustom.withSpanNulls(false),
 
+    local openCostTotalCostVariance7dQuery = |||
+      1 -
+      (
+        avg_over_time(
+          sum(node_total_hourly_cost{job="$job"}) [7d:1h]
+        )
+        /
+        avg_over_time(
+          sum(node_total_hourly_cost{job="$job"}) [1d:1h]
+        )
+      )
+    |||,
+
+    local openCostTotalCostVariance30dQuery = |||
+      1 -
+      (
+        avg_over_time(
+          sum(node_total_hourly_cost{job="$job"}) [30d:1h]
+        )
+        /
+        avg_over_time(
+          sum(node_total_hourly_cost{job="$job"}) [1d:1h]
+        )
+      )
+    |||,
+
+    local openCostTotalCostVarianceTimeSeriesPanel =
+      timeSeriesPanel.new(
+        'Total Cost Variance',
+      ) +
+      tsQueryOptions.withTargets(
+        [
+          prometheus.new(
+            '$datasource',
+            openCostTotalCostVariance7dQuery,
+          ) +
+          prometheus.withLegendFormat('Current hourly cost vs. 7-day average') +
+          prometheus.withInterval('10m'),
+          prometheus.new(
+            '$datasource',
+            openCostTotalCostVariance30dQuery,
+          ) +
+          prometheus.withLegendFormat('Current hourly cost vs. 30-day average') +
+          prometheus.withInterval('10m'),
+        ]
+      ) +
+      tsStandardOptions.withUnit('percentunit') +
+      tsLegend.withShowLegend(true) +
+      tsOptions.tooltip.withMode('multi') +
+      tsOptions.tooltip.withSort('desc') +
+      tsCustom.withSpanNulls(false),
+
+    local openCostCpuCostVariance30dQuery = |||
+      1 -
+      (
+        avg_over_time(
+          %s [30d:1h]
+        )
+        /
+        avg_over_time(
+          %s [1d:1h]
+        )
+      )
+    ||| % [openCostMonthlyCpuCostQuery, openCostMonthlyCpuCostQuery],
+
+    local openCostRamCostVariance30dQuery = |||
+      1 -
+      (
+        avg_over_time(
+          %s [30d:1h]
+        )
+        /
+        avg_over_time(
+          %s [1d:1h]
+        )
+      )
+    ||| % [openCostMonthlyRamCostQuery, openCostMonthlyRamCostQuery],
+
+    local openCostPVCostVariance30dQuery = |||
+      1 -
+      (
+        avg_over_time(
+          (%s) [30d:1h]
+        )
+        /
+        avg_over_time(
+          (%s) [1d:1h]
+        )
+      )
+    ||| % [openCostMonthlyPVCostQuery, openCostMonthlyPVCostQuery],
+
+    local openCostResourceCostVarianceTimeSeriesPanel =
+      timeSeriesPanel.new(
+        'Resource Cost Variance',
+      ) +
+      tsQueryOptions.withTargets(
+        [
+          prometheus.new(
+            '$datasource',
+            openCostCpuCostVariance30dQuery,
+          ) +
+          prometheus.withLegendFormat('Current CPU hourly cost vs. 30-day average') +
+          prometheus.withInterval('10m'),
+          prometheus.new(
+            '$datasource',
+            openCostRamCostVariance30dQuery,
+          ) +
+          prometheus.withLegendFormat('Current RAM hourly cost vs. 30-day average') +
+          prometheus.withInterval('10m'),
+          prometheus.new(
+            '$datasource',
+            openCostPVCostVariance30dQuery,
+          ) +
+          prometheus.withLegendFormat('Current PV hourly cost vs. 30-day average') +
+          prometheus.withInterval('10m'),
+        ]
+      ) +
+      tsStandardOptions.withUnit('percentunit') +
+      tsOptions.tooltip.withMode('multi') +
+      tsOptions.tooltip.withSort('desc') +
+      tsLegend.withShowLegend(true) +
+      tsCustom.withSpanNulls(false),
 
     local openCostResourceCostPieChartPanel =
       pieChartPanel.new(
@@ -773,6 +884,19 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           ) +
           tbStandardOptions.color.withMode('thresholds')
         ),
+      ]) +
+      tbStandardOptions.withOverrides([
+        tbOverride.byName.new('Namespace') +
+        tbOverride.byName.withPropertiesFromOptions(
+          tbStandardOptions.withLinks(
+            tbPanelOptions.link.withTitle('Go To Namespace') +
+            tbPanelOptions.link.withType('dashboard') +
+            tbPanelOptions.link.withUrl(
+              '/d/%s/opencost-namespace?var-job=$job&var-namespace=${__data.fields.Namespace}' % $._config.openCostNamespaceDashboardUid
+            ) +
+            tbPanelOptions.link.withTargetBlank(true)
+          )
+        ),
       ]),
 
     local openCostClusterSummaryRow =
@@ -795,7 +919,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       dashboard.new(
         'OpenCost / Overview',
       ) +
-      dashboard.withDescription('A dashboard that monitors OpenCost and focuses on giving a overview for OpenCost. It is created using the [OpenCost-mixin](https://github.com/adinhodovic/opencost-mixin).') +
+      dashboard.withDescription('A dashboard that monitors OpenCost and focuses on giving a overview for OpenCost. It is created using the [opencost-mixin](https://github.com/adinhodovic/opencost-mixin).') +
       dashboard.withUid($._config.openCostOverviewDashboardUid) +
       dashboard.withTags($._config.tags) +
       dashboard.withTimezone('utc') +
@@ -848,34 +972,43 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           ],
           panelWidth=8,
           panelHeight=5,
-          startY=5
+          startY=10
+        ) +
+        grid.makeGrid(
+          [
+            openCostTotalCostVarianceTimeSeriesPanel,
+            openCostResourceCostVarianceTimeSeriesPanel,
+          ],
+          panelWidth=12,
+          panelHeight=5,
+          startY=15
         ) +
         [
           openCostCloudResourcesRow +
           row.gridPos.withX(0) +
-          row.gridPos.withY(15) +
+          row.gridPos.withY(20) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
         ] +
         [
           openCostNodeTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(16) +
+          tablePanel.gridPos.withY(21) +
           tablePanel.gridPos.withW(16) +
           tablePanel.gridPos.withH(10),
           openCostPVTable +
           tablePanel.gridPos.withX(16) +
-          tablePanel.gridPos.withY(16) +
+          tablePanel.gridPos.withY(21) +
           tablePanel.gridPos.withW(8) +
           tablePanel.gridPos.withH(10),
           openCostNamespaceSummaryRow +
           row.gridPos.withX(0) +
-          row.gridPos.withY(17) +
+          row.gridPos.withY(31) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           openCostNamespaceTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(18) +
+          tablePanel.gridPos.withY(32) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(12),
         ]

@@ -45,6 +45,38 @@
               dashboard_url: $._config.openCostOverviewDashboardUrl,
             },
           },
+          {
+            alert: 'OpenCostAnomalyDetected',
+            expr: |||
+              1 -
+              (
+                avg_over_time(
+                  sum(
+                    node_total_hourly_cost{
+                      %s
+                    }
+                  ) [7d:1h]
+                )
+                /
+                avg_over_time(
+                  sum(
+                    node_total_hourly_cost{
+                      %s
+                    }
+                  ) [3h:30m]
+                )
+              ) > %s
+            ||| % [$._config.openCostSelector, $._config.openCostSelector, $._config.alerts.anomaly.anomalyPercentageThreshold / 100],
+            labels: {
+              severity: 'warning',
+            },
+            'for': '10m',
+            annotations: {
+              summary: 'OpenCost Cost Anomaly Detected',
+              description: 'A significant increase in cluster costs has been detected. The average hourly cost over the last day exceeds the 7-day average by more than %s%%. This could indicate unexpected resource usage or cost-related changes in the cluster.' % $._config.alerts.anomaly.anomalyPercentageThreshold,
+              dashboard_url: $._config.openCostOverviewDashboardUrl,
+            },
+          },
         ],
       },
     ]),

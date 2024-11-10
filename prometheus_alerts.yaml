@@ -37,3 +37,30 @@
     "for": "30m"
     "labels":
       "severity": "warning"
+  - "alert": "OpenCostAnomalyDetected"
+    "annotations":
+      "dashboard_url": "https://grafana.com/d/opencost-mixin-kover-jkwq/opencost-overview"
+      "description": "A significant increase in cluster costs has been detected. The average hourly cost over the last day exceeds the 7-day average by more than 20%. This could indicate unexpected resource usage or cost-related changes in the cluster."
+      "summary": "OpenCost Cost Anomaly Detected"
+    "expr": |
+      1 -
+      (
+        avg_over_time(
+          sum(
+            node_total_hourly_cost{
+              job=~"opencost"
+            }
+          ) [7d:1h]
+        )
+        /
+        avg_over_time(
+          sum(
+            node_total_hourly_cost{
+              job=~"opencost"
+            }
+          ) [3h:30m]
+        )
+      ) > 0.20000000000000001
+    "for": "10m"
+    "labels":
+      "severity": "warning"

@@ -24,8 +24,9 @@ local annotation = g.dashboard.annotation;
         enabled: true,
         monthlyCostThreshold: 200,
       },
-      anomalies: {
+      anomaly: {
         enabled: true,
+        anomalyPercentageThreshold: 20,
       },
     },
 
