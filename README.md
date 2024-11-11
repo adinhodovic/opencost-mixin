@@ -54,10 +54,15 @@ This mixin has its configuration in the `config.libsonnet` file. You can disable
   _config+:: {
     alerts: {
       budget: {
+        // Alerts if the cost is 200 USD (example).
+        // You need to configure this alert.
         enabled: true,
+        monthlyCostThreshold: 200,
       },
-      anomalies: {
+      anomaly: {
+        // Alerts if the cost spiked by 20% or more
         enabled: true,
+        anomalyPercentageThreshold: 20,
       },
     },
   },
