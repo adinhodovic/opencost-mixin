@@ -380,23 +380,23 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local openCostPodMonthlyCostQuery = |||
       topk(10,
         sum(
-          sum(container_memory_allocation_bytes{job="$job", namespace=~"$namespace"}) by (instance, pod)
+          sum(container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"}) by (instance, pod)
           * on(instance) group_left() (
             node_ram_hourly_cost / 1024 / 1024 / 1024 * 730
             + on(node, instance_type) group_left()
             label_replace
             (
-              kube_node_labels{job="$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
+              kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
             ) * 0
           )
           +
-          sum(container_cpu_allocation{job="$job", namespace=~"$namespace"}) by (instance, pod)
+          sum(container_cpu_allocation{job=~"$job", namespace=~"$namespace"}) by (instance, pod)
           * on(instance) group_left() (
-            node_cpu_hourly_cost{job="$job"} * 730
+            node_cpu_hourly_cost{job=~"$job"} * 730
             + on(node,instance_type) group_left()
             label_replace
             (
-              kube_node_labels{job="$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
+              kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
             ) * 0
           )
         ) by (pod)
@@ -534,23 +534,23 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local openCostContainerMonthlyCostQuery = |||
       topk(10,
         sum(
-          sum(container_memory_allocation_bytes{job="$job", namespace=~"$namespace"}) by (instance, container)
+          sum(container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"}) by (instance, container)
           * on(instance) group_left() (
             node_ram_hourly_cost / 1024 / 1024 / 1024 * 730
             + on(node,instance_type) group_left()
             label_replace
             (
-              kube_node_labels{job="$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
+              kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
             ) * 0
           )
           +
-          sum(container_cpu_allocation{job="$job", namespace=~"$namespace"}) by (instance, container)
+          sum(container_cpu_allocation{job=~"$job", namespace=~"$namespace"}) by (instance, container)
           * on(instance) group_left() (
-            node_cpu_hourly_cost{job="$job"} * 730
+            node_cpu_hourly_cost{job=~"$job"} * 730
             + on(node,instance_type) group_left()
             label_replace
             (
-              kube_node_labels{job="$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
+              kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
             ) * 0
           )
         ) by (container)

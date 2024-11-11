@@ -383,11 +383,11 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       1 -
       (
         avg_over_time(
-          sum(node_total_hourly_cost{job="$job"}) [7d:1h]
+          sum(node_total_hourly_cost{job=~"$job"}) [7d:1h]
         )
         /
         avg_over_time(
-          sum(node_total_hourly_cost{job="$job"}) [1d:1h]
+          sum(node_total_hourly_cost{job=~"$job"}) [1d:1h]
         )
       )
     |||,
@@ -396,11 +396,11 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       1 -
       (
         avg_over_time(
-          sum(node_total_hourly_cost{job="$job"}) [30d:1h]
+          sum(node_total_hourly_cost{job=~"$job"}) [30d:1h]
         )
         /
         avg_over_time(
-          sum(node_total_hourly_cost{job="$job"}) [1d:1h]
+          sum(node_total_hourly_cost{job=~"$job"}) [1d:1h]
         )
       )
     |||,
@@ -914,7 +914,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         title='Namespace Summary',
       ),
 
-    'opencost-overview.json':
+    'opencost-mixin-overview.json':
       $._config.bypassDashboardValidation +
       dashboard.new(
         'OpenCost / Overview',

@@ -654,7 +654,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "1 -\n(\n  avg_over_time(\n    sum(node_total_hourly_cost{job=\"$job\"}) [7d:1h]\n  )\n  /\n  avg_over_time(\n    sum(node_total_hourly_cost{job=\"$job\"}) [1d:1h]\n  )\n)\n",
+               "expr": "1 -\n(\n  avg_over_time(\n    sum(node_total_hourly_cost{job=~\"$job\"}) [7d:1h]\n  )\n  /\n  avg_over_time(\n    sum(node_total_hourly_cost{job=~\"$job\"}) [1d:1h]\n  )\n)\n",
                "interval": "10m",
                "legendFormat": "Current hourly cost vs. 7-day average"
             },
@@ -663,7 +663,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "1 -\n(\n  avg_over_time(\n    sum(node_total_hourly_cost{job=\"$job\"}) [30d:1h]\n  )\n  /\n  avg_over_time(\n    sum(node_total_hourly_cost{job=\"$job\"}) [1d:1h]\n  )\n)\n",
+               "expr": "1 -\n(\n  avg_over_time(\n    sum(node_total_hourly_cost{job=~\"$job\"}) [30d:1h]\n  )\n  /\n  avg_over_time(\n    sum(node_total_hourly_cost{job=~\"$job\"}) [1d:1h]\n  )\n)\n",
                "interval": "10m",
                "legendFormat": "Current hourly cost vs. 30-day average"
             }
