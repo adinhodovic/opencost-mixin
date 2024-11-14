@@ -380,9 +380,9 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local openCostPodMonthlyCostQuery = |||
       topk(10,
         sum(
-          sum(container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"}) by (instance, pod)
+          sum(container_memory_allocation_bytes{namespace=~"$namespace", job=~"$job"}) by (instance, pod)
           * on(instance) group_left() (
-            node_ram_hourly_cost / 1024 / 1024 / 1024 * 730
+            node_ram_hourly_cost{job=~"$job"} / 1024 / 1024 / 1024 * 730
             + on(node, instance_type) group_left()
             label_replace
             (
@@ -390,7 +390,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
             ) * 0
           )
           +
-          sum(container_cpu_allocation{job=~"$job", namespace=~"$namespace"}) by (instance, pod)
+          sum(container_cpu_allocation{namespace=~"$namespace", job=~"$job"}) by (instance, pod)
           * on(instance) group_left() (
             node_cpu_hourly_cost{job=~"$job"} * 730
             + on(node,instance_type) group_left()
@@ -403,8 +403,8 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       )
     |||,
 
-    local openCostPodMonthlyCostQueryOffset7d = std.strReplace(openCostPodMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 7d'),
-    local openCostPodMonthlyCostQueryOffset30d = std.strReplace(openCostPodMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 30d'),
+    local openCostPodMonthlyCostQueryOffset7d = std.strReplace(openCostPodMonthlyCostQuery, 'job=~"$job"}', 'job=~"$job"} offset 7d'),
+    local openCostPodMonthlyCostQueryOffset30d = std.strReplace(openCostPodMonthlyCostQuery, 'job=~"$job"}', 'job=~"$job"} offset 30d'),
 
     local openCostPodTable =
       tablePanel.new(
@@ -534,20 +534,20 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local openCostContainerMonthlyCostQuery = |||
       topk(10,
         sum(
-          sum(container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"}) by (instance, container)
+          sum(container_memory_allocation_bytes{namespace=~"$namespace", job=~"$job"}) by (instance, container)
           * on(instance) group_left() (
-            node_ram_hourly_cost / 1024 / 1024 / 1024 * 730
-            + on(node,instance_type) group_left()
+            node_ram_hourly_cost{job=~"$job"} / 1024 / 1024 / 1024 * 730
+            + on(node, instance_type) group_left()
             label_replace
             (
               kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
             ) * 0
           )
           +
-          sum(container_cpu_allocation{job=~"$job", namespace=~"$namespace"}) by (instance, container)
+          sum(container_cpu_allocation{namespace=~"$namespace", job=~"$job"}) by (instance, container)
           * on(instance) group_left() (
             node_cpu_hourly_cost{job=~"$job"} * 730
-            + on(node,instance_type) group_left()
+            + on(node, instance_type) group_left()
             label_replace
             (
               kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
@@ -557,8 +557,8 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       )
     |||,
 
-    local openCostContainerMonthlyCostQueryOffset7d = std.strReplace(openCostContainerMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 7d'),
-    local openCostContainerMonthlyCostQueryOffset30d = std.strReplace(openCostContainerMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 30d'),
+    local openCostContainerMonthlyCostQueryOffset7d = std.strReplace(openCostContainerMonthlyCostQuery, 'job=~"$job"}', 'job=~"$job"} offset 7d'),
+    local openCostContainerMonthlyCostQueryOffset30d = std.strReplace(openCostContainerMonthlyCostQuery, 'job=~"$job"}', 'job=~"$job"} offset 30d'),
 
     local openCostContainerTable =
       tablePanel.new(
