@@ -46,5 +46,5 @@ tests:
               severity: warning
             exp_annotations:
               summary: "OpenCost Cost Anomaly Detected"
-              description: "A significant increase in cluster costs has been detected. The average hourly cost over the last day exceeds the 7-day average by more than 20%. This could indicate unexpected resource usage or cost-related changes in the cluster."
+              description: "A significant increase in cluster costs has been detected. The average hourly cost over the 3 hours exceeds the 7-day average by more than 20%. This could indicate unexpected resource usage or cost-related changes in the cluster."
               dashboard_url: "https://grafana.com/d/opencost-mixin-kover-jkwq/opencost-overview"
