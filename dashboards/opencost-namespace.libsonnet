@@ -79,32 +79,18 @@ local pieQueryOptions = pieChartPanel.queryOptions;
 
     local openCostHourlyCostQuery = |||
       sum(
-        sum(
-          container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"}
-        )
-        by (namespace, instance)
-        * on(instance) group_left() (
-          node_ram_hourly_cost{job=~"$job"}
-          / 1024 / 1024 / 1024 * 1
-          + on(node,instance_type) group_left()
-          label_replace
-          (
-            kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-          ) * 0
+        (
+          sum(container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"})
+          by (namespace, instance)
+          * on(instance) group_left()
+          (avg(node_ram_hourly_cost{job=~"$job"}) by (instance) / (1024 * 1024 * 1024) * 1)
         )
         +
-        sum(
-          container_cpu_allocation{job=~"$job", namespace=~"$namespace"}
-        )
-        by (namespace,instance)
-        * on(instance) group_left() (
-          node_cpu_hourly_cost{job=~"$job"}
-          * 1
-          + on(node, instance_type) group_left()
-          label_replace
-          (
-            kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-          ) * 0
+        (
+          sum(container_cpu_allocation{job=~"$job", namespace=~"$namespace"})
+          by (namespace, instance)
+          * on(instance) group_left()
+          (avg(node_cpu_hourly_cost{job=~"$job"}) by (instance) * 1)
         )
       ) by (namespace)
     |||,
@@ -133,7 +119,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       ]),
 
 
-    local openCostDailyCostQuery = std.strReplace(openCostHourlyCostQuery, '* 1', '* 24'),
+    local openCostDailyCostQuery = std.strReplace(openCostHourlyCostQuery, ') * 1', ') * 24'),
 
     local openCostDailyCostStatPanel =
       statPanel.new(
@@ -158,7 +144,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         stStandardOptions.threshold.step.withColor('green'),
       ]),
 
-    local openCostMonthlyCostQuery = std.strReplace(openCostHourlyCostQuery, '* 1', '* 730'),
+    local openCostMonthlyCostQuery = std.strReplace(openCostHourlyCostQuery, ') * 1', ') * 730'),
 
     local openCostMonthlyCostStatPanel =
       statPanel.new(
@@ -185,19 +171,10 @@ local pieQueryOptions = pieChartPanel.queryOptions;
 
     local openCostMonthlyRamCostQuery = |||
       sum(
-        sum(
-          container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"}
-        )
+        sum(container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"})
         by (namespace, instance)
-        * on(instance) group_left() (
-          node_ram_hourly_cost{job=~"$job"}
-          / 1024 / 1024 / 1024 * 730
-          + on(node,instance_type) group_left()
-          label_replace
-          (
-            kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-          ) * 0
-        )
+        * on(instance) group_left()
+        (avg(node_ram_hourly_cost{job=~"$job"}) by (instance) / (1024 * 1024 * 1024) * 730)
       )
     |||,
 
@@ -226,19 +203,10 @@ local pieQueryOptions = pieChartPanel.queryOptions;
 
     local openCostMonthlyCpuCostQuery = |||
       sum(
-        sum(
-          container_cpu_allocation{job=~"$job", namespace=~"$namespace"}
-        )
-        by (namespace,instance)
-        * on(instance) group_left() (
-          node_cpu_hourly_cost{job=~"$job"}
-          * 730
-          + on(node, instance_type) group_left()
-          label_replace
-          (
-            kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-          ) * 0
-        )
+        sum(container_cpu_allocation{job=~"$job", namespace=~"$namespace"})
+        by (namespace, instance)
+        * on(instance) group_left()
+        (avg(node_cpu_hourly_cost{job=~"$job"}) by (instance) * 730)
       )
     |||,
 
@@ -269,16 +237,15 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       sum(
         sum(
           kube_persistentvolume_capacity_bytes{job=~"$job"}
-          / 1024 / 1024 / 1024
+          / (1024 * 1024 * 1024)
         ) by (persistentvolume)
         *
-        sum(
-          pv_hourly_cost{job=~"$job"}
-        ) by (persistentvolume)
+        sum(pv_hourly_cost{job=~"$job"}) by (persistentvolume)
         * on(persistentvolume) group_left(namespace) (
           label_replace(
             kube_persistentvolumeclaim_info{job=~"$job", namespace=~"$namespace"},
-            "persistentvolume", "$1", "volumename", "(.*)"
+            "persistentvolume", "$1",
+            "volumename", "(.*)"
           )
         )
       ) * 730
@@ -380,24 +347,18 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local openCostPodMonthlyCostQuery = |||
       topk(10,
         sum(
-          sum(container_memory_allocation_bytes{namespace=~"$namespace", job=~"$job"}) by (instance, pod)
-          * on(instance) group_left() (
-            node_ram_hourly_cost{job=~"$job"} / 1024 / 1024 / 1024 * 730
-            + on(node, instance_type) group_left()
-            label_replace
-            (
-              kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-            ) * 0
+          (
+            sum(container_memory_allocation_bytes{namespace=~"$namespace", job=~"$job"})
+            by (instance, pod)
+            * on(instance) group_left()
+            (avg(node_ram_hourly_cost{job=~"$job"}) by (instance) / (1024 * 1024 * 1024) * 730)
           )
           +
-          sum(container_cpu_allocation{namespace=~"$namespace", job=~"$job"}) by (instance, pod)
-          * on(instance) group_left() (
-            node_cpu_hourly_cost{job=~"$job"} * 730
-            + on(node,instance_type) group_left()
-            label_replace
-            (
-              kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-            ) * 0
+          (
+            sum(container_cpu_allocation{namespace=~"$namespace", job=~"$job"})
+            by (instance, pod)
+            * on(instance) group_left()
+            (avg(node_cpu_hourly_cost{job=~"$job"}) by (instance) * 730)
           )
         ) by (pod)
       )
@@ -534,24 +495,18 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local openCostContainerMonthlyCostQuery = |||
       topk(10,
         sum(
-          sum(container_memory_allocation_bytes{namespace=~"$namespace", job=~"$job"}) by (instance, container)
-          * on(instance) group_left() (
-            node_ram_hourly_cost{job=~"$job"} / 1024 / 1024 / 1024 * 730
-            + on(node, instance_type) group_left()
-            label_replace
-            (
-              kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-            ) * 0
+          (
+            sum(container_memory_allocation_bytes{namespace=~"$namespace", job=~"$job"})
+            by (instance, container)
+            * on(instance) group_left()
+            (avg(node_ram_hourly_cost{job=~"$job"}) by (instance) / (1024 * 1024 * 1024) * 730)
           )
           +
-          sum(container_cpu_allocation{namespace=~"$namespace", job=~"$job"}) by (instance, container)
-          * on(instance) group_left() (
-            node_cpu_hourly_cost{job=~"$job"} * 730
-            + on(node, instance_type) group_left()
-            label_replace
-            (
-              kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-            ) * 0
+          (
+            sum(container_cpu_allocation{namespace=~"$namespace", job=~"$job"})
+            by (instance, container)
+            * on(instance) group_left()
+            (avg(node_cpu_hourly_cost{job=~"$job"}) by (instance) * 730)
           )
         ) by (container)
       )
@@ -687,15 +642,16 @@ local pieQueryOptions = pieChartPanel.queryOptions;
 
     local openCostPVTotalGibByPvQuery = |||
       sum(
-        kube_persistentvolume_capacity_bytes{job=~"$job"}
-        / 1024 / 1024 / 1024
-      ) by (persistentvolume)
-      * on(persistentvolume) group_left(namespace) (
-        label_replace(
-          kube_persistentvolumeclaim_info{job=~"$job", namespace=~"$namespace"},
-          "persistentvolume", "$1", "volumename", "(.*)"
-        )
-      )
+        sum(kube_persistentvolume_capacity_bytes{job=~"$job"} / (1024 * 1024 * 1024))
+        by (persistentvolume)
+        * on(persistentvolume) group_left(namespace)
+          label_replace(
+            kube_persistentvolumeclaim_info{job=~"$job", namespace=~"$namespace"},
+            "persistentvolume", "$1",
+            "volumename", "(.*)"
+          )
+        * sum(pv_hourly_cost{job=~"$job"}) by (persistentvolume)
+      ) by (persistentvolume) * 730
     |||,
 
     local openCostPVMonthlyCostByPvQuery = std.strReplace(openCostMonthlyPVCostQuery, '* 730', 'by (persistentvolume) * 730'),

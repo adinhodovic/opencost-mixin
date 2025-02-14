@@ -77,10 +77,9 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         sum(
           kube_persistentvolume_capacity_bytes{
             job=~"$job"
-          }
-          / 1024 / 1024 / 1024
+          } / (1024 * 1024 * 1024)
         ) by (persistentvolume)
-        *
+        * on(persistentvolume) group_left()
         sum(
           pv_hourly_cost{
             job=~"$job"
@@ -172,13 +171,13 @@ local pieQueryOptions = pieChartPanel.queryOptions;
             unit="byte"
           }
         ) by (node)
-        / 1024 / 1024 / 1024
-        *
-        sum(
-          node_ram_hourly_cost{
-            job=~"$job"
-          }
-        ) by (node)
+        / (1024 * 1024 * 1024)
+        * on(node) group_left()
+          sum(
+            node_ram_hourly_cost{
+              job=~"$job"
+            }
+          ) by (node)
         * 730
       )
     |||,
@@ -215,12 +214,12 @@ local pieQueryOptions = pieChartPanel.queryOptions;
             unit="core"
           }
         ) by (node)
-        *
-        sum(
-          node_cpu_hourly_cost{
-            job=~"$job"
-          }
-        ) by (node)
+        * on(node) group_left()
+          sum(
+            node_cpu_hourly_cost{
+              job=~"$job"
+            }
+          ) by (node)
         * 730
       )
     |||,
@@ -252,16 +251,15 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       sum(
         sum(
           kube_persistentvolume_capacity_bytes{
+            job=~"$job"
+          } / (1024 * 1024 * 1024)
+        ) by (persistentvolume)
+        * on(persistentvolume) group_left()
+          sum(
+            pv_hourly_cost{
               job=~"$job"
             }
-          / 1024 / 1024 / 1024
-        ) by (persistentvolume)
-        *
-        sum(
-          pv_hourly_cost{
-            job=~"$job"
-          }
-        ) by (persistentvolume)
+          ) by (persistentvolume)
       ) * 730
     |||,
 
@@ -296,13 +294,12 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           unit="core"
         }
       ) by (node)
-      *
-      on(node) group_left(instance_type, arch)
-      sum(
-        node_cpu_hourly_cost{
-          job=~"$job"
-        }
-      ) by (node, instance_type, arch)
+      * on(node) group_left(instance_type, arch)
+        sum(
+          node_cpu_hourly_cost{
+            job=~"$job"
+          }
+        ) by (node, instance_type, arch)
       * 730
     |||,
 
@@ -314,14 +311,13 @@ local pieQueryOptions = pieChartPanel.queryOptions;
           unit="byte"
         }
       ) by (node)
-      / 1024 / 1024 / 1024
-      *
-      on(node) group_left(instance_type, arch)
-      sum(
-        node_ram_hourly_cost{
-          job=~"$job"
-        }
-      ) by (node, instance_type, arch)
+      / (1024 * 1024 * 1024)
+      * on(node) group_left(instance_type, arch)
+        sum(
+          node_ram_hourly_cost{
+            job=~"$job"
+          }
+        ) by (node, instance_type, arch)
       * 730
     |||,
 
@@ -541,31 +537,15 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         sum(
           sum(
             container_memory_allocation_bytes{job=~"$job"}
-          )
-          by (namespace, instance)
-          * on(instance) group_left() (
-            node_ram_hourly_cost{job=~"$job"}
-            / 1024 / 1024 / 1024 * 730
-            + on(node,instance_type) group_left()
-            label_replace
-            (
-              kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-            ) * 0
-          )
+          ) by (namespace, instance)
+          * on(instance) group_left()
+            (node_ram_hourly_cost{job=~"$job"} / (1024 * 1024 * 1024) * 730)
           +
           sum(
             container_cpu_allocation{job=~"$job"}
-          )
-          by (namespace,instance)
-          * on(instance) group_left() (
-            node_cpu_hourly_cost{job=~"$job"}
-            * 730
-            + on(node, instance_type) group_left()
-            label_replace
-            (
-              kube_node_labels{job=~"$job"}, "instance_type", "$1", "label_node_kubernetes_io_instance_type", "(.*)"
-            ) * 0
-          )
+          ) by (namespace, instance)
+          * on(instance) group_left()
+            (node_cpu_hourly_cost{job=~"$job"} * 730)
         ) by (namespace)
       )
     |||,
