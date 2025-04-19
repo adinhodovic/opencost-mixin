@@ -47,12 +47,35 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         'datasource',
         'prometheus',
       ) +
-      datasource.generalOptions.withLabel('Data source'),
+      datasource.generalOptions.withLabel('Data source') +
+      {
+        current: {
+          selected: true,
+          text: $._config.datasourceName,
+          value: $._config.datasourceName,
+        },
+      },
+
+    local clusterVariable =
+      query.new(
+        $._config.clusterLabel,
+        'label_values(argocd_app_info{}, cluster)' % $._config,
+      ) +
+      query.withDatasourceFromVariable(datasourceVariable) +
+      query.withSort() +
+      query.generalOptions.withLabel('Cluster') +
+      query.refresh.onLoad() +
+      query.refresh.onTime() +
+      (
+        if $._config.showMultiCluster
+        then query.generalOptions.showOnDashboard.withLabelAndValue()
+        else query.generalOptions.showOnDashboard.withNothing()
+      ),
 
     local jobVariable =
       query.new(
         'job',
-        'label_values(opencost_build_info, job)'
+        'label_values(opencost_build_info{%(clusterLabel)s="$cluster"}, job)' % $._config
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -63,7 +86,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local namespaceVariable =
       query.new(
         'namespace',
-        'label_values(kube_namespace_labels, namespace)'
+        'label_values(kube_namespace_labels{%(clusterLabel)s="$cluster", job=~"$job"}, namespace)' % $._config
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -73,6 +96,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
 
     local variables = [
       datasourceVariable,
+      clusterVariable,
       jobVariable,
       namespaceVariable,
     ],
@@ -80,20 +104,42 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local openCostHourlyCostQuery = |||
       sum(
         (
-          sum(container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"})
+          sum(container_memory_allocation_bytes{
+            %(clusterLabel)s="$cluster",
+            job=~"$job",
+            namespace=~"$namespace"
+          })
           by (namespace, instance)
           * on(instance) group_left()
-          (avg(node_ram_hourly_cost{job=~"$job"}) by (instance) / (1024 * 1024 * 1024) * 1)
+          (
+            avg(
+              node_ram_hourly_cost{
+                %(clusterLabel)s="$cluster",
+                job=~"$job"
+              }
+            ) by (instance) / (1024 * 1024 * 1024) * 1)
         )
         +
         (
-          sum(container_cpu_allocation{job=~"$job", namespace=~"$namespace"})
+          sum(
+            container_cpu_allocation{
+              %(clusterLabel)s="$cluster",
+              job=~"$job",
+              namespace=~"$namespace"
+            }
+          )
           by (namespace, instance)
           * on(instance) group_left()
-          (avg(node_cpu_hourly_cost{job=~"$job"}) by (instance) * 1)
+          (
+            avg(
+              node_cpu_hourly_cost{
+                %(clusterLabel)s="$cluster",
+                job=~"$job"
+              }
+            ) by (instance) * 1)
         )
       ) by (namespace)
-    |||,
+    ||| % $._config,
 
     local openCostHourlyCostStatPanel =
       statPanel.new(
@@ -171,12 +217,25 @@ local pieQueryOptions = pieChartPanel.queryOptions;
 
     local openCostMonthlyRamCostQuery = |||
       sum(
-        sum(container_memory_allocation_bytes{job=~"$job", namespace=~"$namespace"})
+        sum(
+          container_memory_allocation_bytes{
+            %(clusterLabel)s="$cluster",
+            job=~"$job",
+            namespace=~"$namespace"
+          }
+        )
         by (namespace, instance)
         * on(instance) group_left()
-        (avg(node_ram_hourly_cost{job=~"$job"}) by (instance) / (1024 * 1024 * 1024) * 730)
+        (
+          avg(
+            node_ram_hourly_cost{
+              %(clusterLabel)s="$cluster",
+              job=~"$job"
+            }
+          ) by (instance) / (1024 * 1024 * 1024) * 730
+        )
       )
-    |||,
+    ||| % $._config,
 
     local openCostMonthlyRamCostStatPanel =
       statPanel.new(
@@ -203,12 +262,25 @@ local pieQueryOptions = pieChartPanel.queryOptions;
 
     local openCostMonthlyCpuCostQuery = |||
       sum(
-        sum(container_cpu_allocation{job=~"$job", namespace=~"$namespace"})
+        sum(
+          container_cpu_allocation{
+            %(clusterLabel)s="$cluster",
+            job=~"$job",
+            namespace=~"$namespace"
+          }
+        )
         by (namespace, instance)
         * on(instance) group_left()
-        (avg(node_cpu_hourly_cost{job=~"$job"}) by (instance) * 730)
+        (
+          avg(
+            node_cpu_hourly_cost{
+              %(clusterLabel)s="$cluster",
+              job=~"$job"
+            }
+          ) by (instance) * 730
+        )
       )
-    |||,
+    ||| % $._config,
 
     local openCostMonthlyCpuCostStatPanel =
       statPanel.new(
@@ -236,20 +308,32 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local openCostMonthlyPVCostQuery = |||
       sum(
         sum(
-          kube_persistentvolume_capacity_bytes{job=~"$job"}
+          kube_persistentvolume_capacity_bytes{
+            %(clusterLabel)s="$cluster",
+            job=~"$job"
+          }
           / (1024 * 1024 * 1024)
         ) by (persistentvolume)
         *
-        sum(pv_hourly_cost{job=~"$job"}) by (persistentvolume)
-        * on(persistentvolume) group_left(namespace) (
+        sum(
+          pv_hourly_cost{
+            %(clusterLabel)s="$cluster",
+            job=~"$job"
+          }
+        ) by (persistentvolume)
+        * on(persistentvolume) group_left(cluster, namespace) (
           label_replace(
-            kube_persistentvolumeclaim_info{job=~"$job", namespace=~"$namespace"},
+            kube_persistentvolumeclaim_info{
+              %(clusterLabel)s="$cluster",
+              job=~"$job",
+              namespace=~"$namespace"
+            },
             "persistentvolume", "$1",
             "volumename", "(.*)"
           )
         )
       ) * 730
-    |||,
+    ||| % $._config,
 
     local openCostMonthlyPVCostStatPanel =
       statPanel.new(
@@ -344,25 +428,47 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       pieOptions.legend.withValues(['value', 'percent']) +
       pieOptions.legend.withSortDesc(true),
 
+    // Keep job label formatting inconsistent due to strReplace
     local openCostPodMonthlyCostQuery = |||
       topk(10,
         sum(
           (
-            sum(container_memory_allocation_bytes{namespace=~"$namespace", job=~"$job"})
+            sum(
+              container_memory_allocation_bytes{
+                %(clusterLabel)s="$cluster",
+                namespace=~"$namespace",
+                job=~"$job"}
+            )
             by (instance, pod)
             * on(instance) group_left()
-            (avg(node_ram_hourly_cost{job=~"$job"}) by (instance) / (1024 * 1024 * 1024) * 730)
+            (
+              avg(
+                node_ram_hourly_cost{
+                  %(clusterLabel)s="$cluster",
+                  job=~"$job"}
+              ) by (instance) / (1024 * 1024 * 1024) * 730
+            )
           )
           +
           (
-            sum(container_cpu_allocation{namespace=~"$namespace", job=~"$job"})
+            sum(
+              container_cpu_allocation{
+                %(clusterLabel)s="$cluster",
+                namespace=~"$namespace",
+                job=~"$job"}
+            )
             by (instance, pod)
             * on(instance) group_left()
-            (avg(node_cpu_hourly_cost{job=~"$job"}) by (instance) * 730)
+            (
+              avg(
+                node_cpu_hourly_cost{
+                  %(clusterLabel)s="$cluster",
+                  job=~"$job"}
+              ) by (instance) * 730)
           )
         ) by (pod)
       )
-    |||,
+    ||| % $._config,
 
     local openCostPodMonthlyCostQueryOffset7d = std.strReplace(openCostPodMonthlyCostQuery, 'job=~"$job"}', 'job=~"$job"} offset 7d'),
     local openCostPodMonthlyCostQueryOffset30d = std.strReplace(openCostPodMonthlyCostQuery, 'job=~"$job"}', 'job=~"$job"} offset 30d'),
@@ -496,21 +602,43 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       topk(10,
         sum(
           (
-            sum(container_memory_allocation_bytes{namespace=~"$namespace", job=~"$job"})
+            sum(
+              container_memory_allocation_bytes{
+                %(clusterLabel)s="$cluster",
+                namespace=~"$namespace",
+                job=~"$job"}
+            )
             by (instance, container)
             * on(instance) group_left()
-            (avg(node_ram_hourly_cost{job=~"$job"}) by (instance) / (1024 * 1024 * 1024) * 730)
+            (
+              avg(
+                node_ram_hourly_cost{
+                  %(clusterLabel)s="$cluster",
+                  job=~"$job"}
+              ) by (instance) / (1024 * 1024 * 1024) * 730
+            )
           )
           +
           (
-            sum(container_cpu_allocation{namespace=~"$namespace", job=~"$job"})
+            sum(
+              container_cpu_allocation{
+                %(clusterLabel)s="$cluster",
+                namespace=~"$namespace",
+                job=~"$job"}
+            )
             by (instance, container)
             * on(instance) group_left()
-            (avg(node_cpu_hourly_cost{job=~"$job"}) by (instance) * 730)
+            (
+              avg(
+                node_cpu_hourly_cost{
+                  %(clusterLabel)s="$cluster",
+                  job=~"$job"}
+              ) by (instance) * 730
+            )
           )
         ) by (container)
       )
-    |||,
+    ||| % $._config,
 
     local openCostContainerMonthlyCostQueryOffset7d = std.strReplace(openCostContainerMonthlyCostQuery, 'job=~"$job"}', 'job=~"$job"} offset 7d'),
     local openCostContainerMonthlyCostQueryOffset30d = std.strReplace(openCostContainerMonthlyCostQuery, 'job=~"$job"}', 'job=~"$job"} offset 30d'),
@@ -642,17 +770,31 @@ local pieQueryOptions = pieChartPanel.queryOptions;
 
     local openCostPVTotalGibByPvQuery = |||
       sum(
-        sum(kube_persistentvolume_capacity_bytes{job=~"$job"} / (1024 * 1024 * 1024))
+        sum(
+          kube_persistentvolume_capacity_bytes{
+            %(clusterLabel)s="$cluster",
+            job=~"$job"
+          } / (1024 * 1024 * 1024)
+        )
         by (persistentvolume)
-        * on(persistentvolume) group_left(namespace)
+        * on(persistentvolume) group_left(cluster, namespace)
           label_replace(
-            kube_persistentvolumeclaim_info{job=~"$job", namespace=~"$namespace"},
+            kube_persistentvolumeclaim_info{
+              %(clusterLabel)s="$cluster",
+              job=~"$job",
+              namespace=~"$namespace"
+            },
             "persistentvolume", "$1",
             "volumename", "(.*)"
           )
-        * sum(pv_hourly_cost{job=~"$job"}) by (persistentvolume)
+        * sum(
+            pv_hourly_cost{
+              %(clusterLabel)s="$cluster",
+              job=~"$job"
+            }
+          ) by (persistentvolume)
       ) by (persistentvolume) * 730
-    |||,
+    ||| % $._config,
 
     local openCostPVMonthlyCostByPvQuery = std.strReplace(openCostMonthlyPVCostQuery, '* 730', 'by (persistentvolume) * 730'),
 

@@ -48,12 +48,35 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         'datasource',
         'prometheus',
       ) +
-      datasource.generalOptions.withLabel('Data source'),
+      datasource.generalOptions.withLabel('Data source') +
+      {
+        current: {
+          selected: true,
+          text: $._config.datasourceName,
+          value: $._config.datasourceName,
+        },
+      },
+
+    local clusterVariable =
+      query.new(
+        $._config.clusterLabel,
+        'label_values(argocd_app_info{}, cluster)' % $._config,
+      ) +
+      query.withDatasourceFromVariable(datasourceVariable) +
+      query.withSort() +
+      query.generalOptions.withLabel('Cluster') +
+      query.refresh.onLoad() +
+      query.refresh.onTime() +
+      (
+        if $._config.showMultiCluster
+        then query.generalOptions.showOnDashboard.withLabelAndValue()
+        else query.generalOptions.showOnDashboard.withNothing()
+      ),
 
     local jobVariable =
       query.new(
         'job',
-        'label_values(opencost_build_info, job)'
+        'label_values(opencost_build_info{%(clusterLabel)s="$cluster"}, job)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort(1) +
@@ -63,12 +86,14 @@ local pieQueryOptions = pieChartPanel.queryOptions;
 
     local variables = [
       datasourceVariable,
+      clusterVariable,
       jobVariable,
     ],
 
     local openCostDailyCostQuery = |||
       sum(
         node_total_hourly_cost{
+          %(clusterLabel)s="$cluster",
           job=~"$job"
         }
       ) * 24
@@ -76,17 +101,19 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       sum(
         sum(
           kube_persistentvolume_capacity_bytes{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           } / (1024 * 1024 * 1024)
         ) by (persistentvolume)
         * on(persistentvolume) group_left()
         sum(
           pv_hourly_cost{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         ) by (persistentvolume)
       ) * 24
-    |||,
+    ||| % $._config,
 
     local openCostDailyCostStatPanel =
       statPanel.new(
@@ -166,6 +193,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       sum(
         sum(
           kube_node_status_capacity{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             resource="memory",
             unit="byte"
@@ -175,12 +203,13 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         * on(node) group_left()
           sum(
             node_ram_hourly_cost{
+              %(clusterLabel)s="$cluster",
               job=~"$job"
             }
           ) by (node)
         * 730
       )
-    |||,
+    ||| % $._config,
 
     local openCostMonthlyRamCostStatPanel =
       statPanel.new(
@@ -209,6 +238,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       sum(
         sum(
           kube_node_status_capacity{
+            %(clusterLabel)s="$cluster",
             job=~"$job",
             resource="cpu",
             unit="core"
@@ -217,12 +247,13 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         * on(node) group_left()
           sum(
             node_cpu_hourly_cost{
+              %(clusterLabel)s="$cluster",
               job=~"$job"
             }
           ) by (node)
         * 730
       )
-    |||,
+    ||| % $._config,
 
     local openCostMonthlyCpuCostStatPanel =
       statPanel.new(
@@ -251,17 +282,19 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       sum(
         sum(
           kube_persistentvolume_capacity_bytes{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           } / (1024 * 1024 * 1024)
         ) by (persistentvolume)
         * on(persistentvolume) group_left()
           sum(
             pv_hourly_cost{
+              %(clusterLabel)s="$cluster",
               job=~"$job"
             }
           ) by (persistentvolume)
       ) * 730
-    |||,
+    ||| % $._config,
 
     local openCostMonthlyPVCostStatPanel =
       statPanel.new(
@@ -289,37 +322,41 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local openCostNodeMonthlyCpuCostQuery = |||
       sum(
         kube_node_status_capacity{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           resource="cpu",
           unit="core"
         }
       ) by (node)
-      * on(node) group_left(instance_type, arch)
+      * on(node) group_left(cluster, instance_type, arch)
         sum(
           node_cpu_hourly_cost{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         ) by (node, instance_type, arch)
       * 730
-    |||,
+    ||| % $._config,
 
     local openCostNodeMonthlyRamCostQuery = |||
       sum(
         kube_node_status_capacity{
+          %(clusterLabel)s="$cluster",
           job=~"$job",
           resource="memory",
           unit="byte"
         }
       ) by (node)
       / (1024 * 1024 * 1024)
-      * on(node) group_left(instance_type, arch)
+      * on(node) group_left(cluster, instance_type, arch)
         sum(
           node_ram_hourly_cost{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         ) by (node, instance_type, arch)
       * 730
-    |||,
+    ||| % $._config,
 
     local openCostHourlyCostTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -379,27 +416,47 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       1 -
       (
         avg_over_time(
-          sum(node_total_hourly_cost{job=~"$job"}) [7d:1h]
+          sum(
+            node_total_hourly_cost{
+              %(clusterLabel)s="$cluster",
+              job=~"$job"
+            }
+          ) [7d:1h]
         )
         /
         avg_over_time(
-          sum(node_total_hourly_cost{job=~"$job"}) [1d:1h]
+          sum(
+            node_total_hourly_cost{
+              %(clusterLabel)s="$cluster",
+              job=~"$job"
+            }
+          ) [1d:1h]
         )
       )
-    |||,
+    ||| % $._config,
 
     local openCostTotalCostVariance30dQuery = |||
       1 -
       (
         avg_over_time(
-          sum(node_total_hourly_cost{job=~"$job"}) [30d:1h]
+          sum(
+            node_total_hourly_cost{
+              %(clusterLabel)s="$cluster",
+              job=~"$job"
+            }
+          ) [30d:1h]
         )
         /
         avg_over_time(
-          sum(node_total_hourly_cost{job=~"$job"}) [1d:1h]
+          sum(
+            node_total_hourly_cost{
+              %(clusterLabel)s="$cluster",
+              job=~"$job"
+            }
+          ) [1d:1h]
         )
       )
-    |||,
+    ||| % $._config,
 
     local openCostTotalCostVarianceTimeSeriesPanel =
       timeSeriesPanel.new(
@@ -412,13 +469,13 @@ local pieQueryOptions = pieChartPanel.queryOptions;
             openCostTotalCostVariance7dQuery,
           ) +
           prometheus.withLegendFormat('Current hourly cost vs. 7-day average') +
-          prometheus.withInterval('10m'),
+          prometheus.withInterval('30m'),
           prometheus.new(
             '$datasource',
             openCostTotalCostVariance30dQuery,
           ) +
           prometheus.withLegendFormat('Current hourly cost vs. 30-day average') +
-          prometheus.withInterval('10m'),
+          prometheus.withInterval('30m'),
         ]
       ) +
       tsStandardOptions.withUnit('percentunit') +
@@ -477,19 +534,19 @@ local pieQueryOptions = pieChartPanel.queryOptions;
             openCostCpuCostVariance30dQuery,
           ) +
           prometheus.withLegendFormat('Current CPU hourly cost vs. 30-day average') +
-          prometheus.withInterval('10m'),
+          prometheus.withInterval('30m'),
           prometheus.new(
             '$datasource',
             openCostRamCostVariance30dQuery,
           ) +
           prometheus.withLegendFormat('Current RAM hourly cost vs. 30-day average') +
-          prometheus.withInterval('10m'),
+          prometheus.withInterval('30m'),
           prometheus.new(
             '$datasource',
             openCostPVCostVariance30dQuery,
           ) +
           prometheus.withLegendFormat('Current PV hourly cost vs. 30-day average') +
-          prometheus.withInterval('10m'),
+          prometheus.withInterval('30m'),
         ]
       ) +
       tsStandardOptions.withUnit('percentunit') +
@@ -532,23 +589,36 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       pieOptions.legend.withValues(['value', 'percent']) +
       pieOptions.legend.withSortDesc(true),
 
+    // Keep job label formatting inconsistent due to strReplace
     local openCostNamespaceMonthlyCostQuery = |||
       topk(10,
         sum(
           sum(
-            container_memory_allocation_bytes{job=~"$job"}
+            container_memory_allocation_bytes{
+              %(clusterLabel)s="$cluster",
+              job=~"$job"}
           ) by (namespace, instance)
           * on(instance) group_left()
-            (node_ram_hourly_cost{job=~"$job"} / (1024 * 1024 * 1024) * 730)
+            (
+              node_ram_hourly_cost{
+                %(clusterLabel)s="$cluster",
+                job=~"$job"} / (1024 * 1024 * 1024) * 730
+            )
           +
           sum(
-            container_cpu_allocation{job=~"$job"}
+            container_cpu_allocation{
+              %(clusterLabel)s="$cluster",
+              job=~"$job"}
           ) by (namespace, instance)
           * on(instance) group_left()
-            (node_cpu_hourly_cost{job=~"$job"} * 730)
+            (
+              node_cpu_hourly_cost{
+                %(clusterLabel)s="$cluster",
+                job=~"$job"} * 730
+            )
         ) by (namespace)
       )
-    |||,
+    ||| % $._config,
 
     local openCostNamespaceCostPieChartPanel =
       pieChartPanel.new(
@@ -574,11 +644,12 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       topk(10,
         sum(
           node_total_hourly_cost{
+            %(clusterLabel)s="$cluster",
             job=~"$job"
           }
         ) by (instance_type) * 730
       )
-    |||,
+    ||| % $._config,
 
     local openCostInstanceTypeCostPieChartPanel =
       pieChartPanel.new(
@@ -603,11 +674,12 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local openCostNodeTotalCostQuery = |||
       sum(
         node_total_hourly_cost{
+          %(clusterLabel)s="$cluster",
           job=~"$job"
         }
       ) by (node, instance_type, arch)
       * 730
-    |||,
+    ||| % $._config,
 
     local openCostNodeTable =
       tablePanel.new(
@@ -677,27 +749,30 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local openCostPVTotalGibQuery = |||
       sum(
         kube_persistentvolume_capacity_bytes{
+          %(clusterLabel)s="$cluster",
           job=~"$job"
         }
         / 1024 / 1024 / 1024
       ) by (persistentvolume)
-    |||,
+    ||| % $._config,
 
     local openCostPVMonthlyCostQuery = |||
       sum(
         kube_persistentvolume_capacity_bytes{
-            job=~"$job"
-          }
+          %(clusterLabel)s="$cluster",
+          job=~"$job"
+        }
         / 1024 / 1024 / 1024
       ) by (persistentvolume)
       *
       sum(
         pv_hourly_cost{
+          %(clusterLabel)s="$cluster",
           job=~"$job"
         }
         * 730
       ) by (persistentvolume)
-    |||,
+    ||| % $._config,
 
     local openCostPVTable =
       tablePanel.new(
@@ -758,8 +833,8 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         ),
       ]),
 
-    local openCostNamespaceMonthlyCostQueryOffset7d = std.strReplace(openCostNamespaceMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 7d'),
-    local openCostNamespaceMonthlyCostQueryOffset30d = std.strReplace(openCostNamespaceMonthlyCostQuery, '{job=~"$job"}', '{job=~"$job"} offset 30d'),
+    local openCostNamespaceMonthlyCostQueryOffset7d = std.strReplace(openCostNamespaceMonthlyCostQuery, 'job=~"$job"}', 'job=~"$job"} offset 7d'),
+    local openCostNamespaceMonthlyCostQueryOffset30d = std.strReplace(openCostNamespaceMonthlyCostQuery, 'job=~"$job"}', 'job=~"$job"} offset 30d'),
 
     local openCostNamespaceTable =
       tablePanel.new(

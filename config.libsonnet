@@ -12,6 +12,13 @@ local annotation = g.dashboard.annotation;
 
     openCostSelector: 'job=~"opencost"',
 
+    // Default datasource name
+    datasourceName: 'default',
+
+    // Opt-in to multiCluster dashboards by overriding this and the clusterLabel.
+    showMultiCluster: false,
+    clusterLabel: 'cluster',
+
     grafanaUrl: 'https://grafana.com',
 
     openCostOverviewDashboardUid: 'opencost-mixin-kover-jkwq',
