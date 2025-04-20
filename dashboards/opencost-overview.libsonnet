@@ -164,7 +164,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         stStandardOptions.threshold.step.withColor('green'),
       ]),
 
-    local openCostMonthlyCostQuery = std.strReplace(openCostDailyCostQuery, '24', '730'),
+    local openCostMonthlyCostQuery = std.strReplace(openCostDailyCostQuery, '* 24', '* 730'),
 
     local openCostMonthlyCostStatPanel =
       statPanel.new(
@@ -979,7 +979,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       dashboard.withTags($._config.tags) +
       dashboard.withTimezone('utc') +
       dashboard.withEditable(true) +
-      dashboard.time.withFrom('now-7d') +
+      dashboard.time.withFrom('now-2d') +
       dashboard.time.withTo('now') +
       dashboard.withVariables(variables) +
       dashboard.withLinks(
