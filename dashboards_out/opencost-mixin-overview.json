@@ -180,7 +180,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\n    job=~\"$job\"\n  }\n) * 730\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\n      job=~\"$job\"\n    } / (10730 * 10730 * 10730)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\n      job=~\"$job\"\n    }\n  ) by (persistentvolume)\n) * 730\n"
+               "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\n    job=~\"$job\"\n  }\n) * 730\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\n      job=~\"$job\"\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\n      job=~\"$job\"\n    }\n  ) by (persistentvolume)\n) * 730\n"
             }
          ],
          "title": "Monthly Cost",
@@ -457,7 +457,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\n    job=~\"$job\"\n  }\n) * 730\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\n      job=~\"$job\"\n    } / (10730 * 10730 * 10730)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\n      job=~\"$job\"\n    }\n  ) by (persistentvolume)\n) * 730\n",
+               "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\n    job=~\"$job\"\n  }\n) * 730\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\n      job=~\"$job\"\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\n      job=~\"$job\"\n    }\n  ) by (persistentvolume)\n) * 730\n",
                "interval": "1m",
                "legendFormat": "Monthly Cost"
             }
@@ -1109,7 +1109,7 @@
       ]
    },
    "time": {
-      "from": "now-7d",
+      "from": "now-2d",
       "to": "now"
    },
    "timezone": "utc",
