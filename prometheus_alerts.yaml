@@ -12,7 +12,7 @@
           node_total_hourly_cost{
             job=~"opencost"
           }
-        ) * 730
+        ) by (cluster) * 730
         or vector(0)
       )
       +
@@ -23,13 +23,13 @@
               job=~"opencost"
             }
             / 1024 / 1024 / 1024
-          ) by (persistentvolume)
+          ) by (cluster, persistentvolume)
           *
           sum(
             pv_hourly_cost{
               job=~"opencost"
             }
-          ) by (persistentvolume)
+          ) by (cluster, persistentvolume)
         ) * 730
         or vector(0)
       )
@@ -50,7 +50,7 @@
             node_total_hourly_cost{
               job=~"opencost"
             }
-          ) [7d:1h]
+          ) by (cluster) [7d:1h]
         )
         /
         avg_over_time(
@@ -58,9 +58,9 @@
             node_total_hourly_cost{
               job=~"opencost"
             }
-          ) [3h:30m]
+          ) by (cluster) [3h:30m]
         )
-      ) > 0.20000000000000001
+      ) > (20 / 100)
     "for": "10m"
     "labels":
       "severity": "warning"
