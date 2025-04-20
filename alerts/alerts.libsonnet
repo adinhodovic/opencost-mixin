@@ -1,5 +1,5 @@
 {
-  local clusterVariableQueryString = if $._config.showMultiCluster then '?var-%(clusterLabel)s={{ $labels.%(clusterLabel)s}}' % $._config else '',
+  local clusterVariableQueryString = if $._config.showMultiCluster then '?var-%(clusterLabel)s={{ $labels.%(clusterLabel)s }}' % $._config else '',
   prometheusAlerts+:: {
     groups+: std.prune([
       if $._config.alerts.budget.enabled then {
@@ -15,9 +15,7 @@
                   }
                 ) by (%(clusterLabel)s) * 730
                 or vector(0)
-              )
-              +
-              (
+                +
                 sum(
                   sum(
                     kube_persistentvolume_capacity_bytes{
@@ -50,23 +48,22 @@
             alert: 'OpenCostAnomalyDetected',
             expr: |||
               1 -
-              (
-                avg_over_time(
-                  sum(
-                    node_total_hourly_cost{
-                      %(openCostSelector)s
-                    }
-                  ) by (%(clusterLabel)s) [7d:1h]
-                )
-                /
-                avg_over_time(
-                  sum(
-                    node_total_hourly_cost{
-                      %(openCostSelector)s
-                    }
-                  ) by (%(clusterLabel)s) [3h:30m]
-                )
-              ) > (%(anomalyPercentageThreshold)s / 100)
+              avg_over_time(
+                sum(
+                  node_total_hourly_cost{
+                    %(openCostSelector)s
+                  }
+                ) by (%(clusterLabel)s) [7d:30m]
+              )
+              /
+              avg_over_time(
+                sum(
+                  node_total_hourly_cost{
+                    %(openCostSelector)s
+                  }
+                ) by (%(clusterLabel)s) [3h:30m]
+              )
+              > (%(anomalyPercentageThreshold)s / 100)
             ||| % ($._config { anomalyPercentageThreshold: $._config.alerts.anomaly.anomalyPercentageThreshold }),
             labels: {
               severity: 'warning',

@@ -33,7 +33,7 @@ local annotation = g.dashboard.annotation;
       },
       anomaly: {
         enabled: true,
-        anomalyPercentageThreshold: 20,
+        anomalyPercentageThreshold: 15,
       },
     },
 
