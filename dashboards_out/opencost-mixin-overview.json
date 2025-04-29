@@ -1089,7 +1089,7 @@
             "hide": 2,
             "label": "Cluster",
             "name": "cluster",
-            "query": "label_values(argocd_app_info{}, cluster)",
+            "query": "label_values(opencost_build_info{}, cluster)",
             "refresh": 2,
             "sort": 1,
             "type": "query"
