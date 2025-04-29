@@ -60,7 +60,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
     local clusterVariable =
       query.new(
         $._config.clusterLabel,
-        'label_values(argocd_app_info{}, cluster)' % $._config,
+        'label_values(opencost_build_info{}, cluster)' % $._config,
       ) +
       query.withDatasourceFromVariable(datasourceVariable) +
       query.withSort() +
