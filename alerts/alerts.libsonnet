@@ -47,21 +47,101 @@
           {
             alert: 'OpenCostAnomalyDetected',
             expr: |||
-              1 -
-              avg_over_time(
-                sum(
-                  node_total_hourly_cost{
-                    %(openCostSelector)s
-                  }
-                ) by (%(clusterLabel)s) [7d:30m]
+              (
+                (
+                  (
+                    avg_over_time(
+                      sum(
+                        node_total_hourly_cost{
+                          %(openCostSelector)s
+                        }
+                      ) by (%(clusterLabel)s) [3h:30m]
+                    )
+                    or vector(0)
+                  )
+                  +
+                  (
+                    avg_over_time(
+                      sum(
+                        (
+                          kube_persistentvolume_capacity_bytes{
+                            %(openCostSelector)s
+                          } / 1024 / 1024 / 1024
+                        )
+                        * on (%(clusterLabel)s, persistentvolume)
+                        group_left()
+                        pv_hourly_cost{
+                          %(openCostSelector)s
+                        }
+                      ) by (%(clusterLabel)s) [3h:30m]
+                    )
+                    or vector(0)
+                  )
+                )
+                -
+                (
+                  (
+                    avg_over_time(
+                      sum(
+                        node_total_hourly_cost{
+                          %(openCostSelector)s
+                        }
+                      ) by (%(clusterLabel)s) [7d:30m]
+                    )
+                    or vector(0)
+                  )
+                  +
+                  (
+                    avg_over_time(
+                      sum(
+                        (
+                          kube_persistentvolume_capacity_bytes{
+                            %(openCostSelector)s
+                          } / 1024 / 1024 / 1024
+                        )
+                        * on (%(clusterLabel)s, persistentvolume)
+                        group_left()
+                        pv_hourly_cost{
+                          %(openCostSelector)s
+                        }
+                      ) by (%(clusterLabel)s) [7d:30m]
+                    )
+                    or vector(0)
+                  )
+                )
               )
               /
-              avg_over_time(
-                sum(
-                  node_total_hourly_cost{
-                    %(openCostSelector)s
-                  }
-                ) by (%(clusterLabel)s) [3h:30m]
+              (
+                (
+                  (
+                    avg_over_time(
+                      sum(
+                        node_total_hourly_cost{
+                          %(openCostSelector)s
+                        }
+                      ) by (%(clusterLabel)s) [7d:30m]
+                    )
+                    or vector(0)
+                  )
+                  +
+                  (
+                    avg_over_time(
+                      sum(
+                        (
+                          kube_persistentvolume_capacity_bytes{
+                            %(openCostSelector)s
+                          } / 1024 / 1024 / 1024
+                        )
+                        * on (%(clusterLabel)s, persistentvolume)
+                        group_left()
+                        pv_hourly_cost{
+                          %(openCostSelector)s
+                        }
+                      ) by (%(clusterLabel)s) [7d:30m]
+                    )
+                    or vector(0)
+                  )
+                )
               )
               > (%(anomalyPercentageThreshold)s / 100)
             ||| % ($._config { anomalyPercentageThreshold: $._config.alerts.anomaly.anomalyPercentageThreshold }),

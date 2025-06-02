@@ -37,9 +37,27 @@ tests:
   - interval: 1h
     input_series:
       - series: 'node_total_hourly_cost{job="opencost", node="test-node"}'
-        values: "1x3 2000x3"
+        values: "1x12 2000x3"
     alert_rule_test:
-      - eval_time: 6h
+      - eval_time: 15h
+        alertname: OpenCostAnomalyDetected
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+            exp_annotations:
+              summary: "OpenCost Cost Anomaly Detected"
+              description: "A significant increase in cluster costs has been detected. The average hourly cost over the 3 hours exceeds the 7-day average by more than 15%. This could indicate unexpected resource usage or cost-related changes in the cluster."
+              dashboard_url: "https://grafana.com/d/opencost-mixin-kover-jkwq/opencost-overview"
+  - interval: 1h
+    input_series:
+      - series: 'node_total_hourly_cost{job="opencost", node="test-node"}'
+        values: "1x12 2000x3"
+      - series: 'kube_persistentvolume_capacity_bytes{job="opencost", persistentvolume="pv1"}'
+        values: "10737418240x15" # 10 GiB
+      - series: 'pv_hourly_cost{job="opencost", cluster="test-cluster", persistentvolume="pv1"}'
+        values: "0.01x15"
+    alert_rule_test:
+      - eval_time: 15h
         alertname: OpenCostAnomalyDetected
         exp_alerts:
           - exp_labels:

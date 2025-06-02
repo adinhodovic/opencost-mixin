@@ -413,48 +413,46 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       tsCustom.withSpanNulls(false),
 
     local openCostTotalCostVariance7dQuery = |||
-      1 -
       (
         avg_over_time(
           sum(
-            node_total_hourly_cost{
-              %(clusterLabel)s="$cluster",
-              job=~"$job"
-            }
-          ) [7d:1h]
-        )
-        /
-        avg_over_time(
-          sum(
-            node_total_hourly_cost{
-              %(clusterLabel)s="$cluster",
-              job=~"$job"
-            }
+            node_total_hourly_cost{%(clusterLabel)s="$cluster", job=~"$job"}
           ) [1d:1h]
         )
+        -
+        avg_over_time(
+          sum(
+            node_total_hourly_cost{%(clusterLabel)s="$cluster", job=~"$job"}
+          ) [7d:1h]
+        )
+      )
+      /
+      avg_over_time(
+        sum(
+          node_total_hourly_cost{%(clusterLabel)s="$cluster", job=~"$job"}
+        ) [7d:1h]
       )
     ||| % $._config,
 
     local openCostTotalCostVariance30dQuery = |||
-      1 -
       (
         avg_over_time(
           sum(
-            node_total_hourly_cost{
-              %(clusterLabel)s="$cluster",
-              job=~"$job"
-            }
-          ) [30d:1h]
-        )
-        /
-        avg_over_time(
-          sum(
-            node_total_hourly_cost{
-              %(clusterLabel)s="$cluster",
-              job=~"$job"
-            }
+            node_total_hourly_cost{%(clusterLabel)s="$cluster", job=~"$job"}
           ) [1d:1h]
         )
+        -
+        avg_over_time(
+          sum(
+            node_total_hourly_cost{%(clusterLabel)s="$cluster", job=~"$job"}
+          ) [30d:1h]
+        )
+      )
+      /
+      avg_over_time(
+        sum(
+          node_total_hourly_cost{%(clusterLabel)s="$cluster", job=~"$job"}
+        ) [30d:1h]
       )
     ||| % $._config,
 
@@ -485,43 +483,52 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       tsCustom.withSpanNulls(false),
 
     local openCostCpuCostVariance30dQuery = |||
-      1 -
       (
-        avg_over_time(
-          %s [30d:1h]
-        )
-        /
         avg_over_time(
           %s [1d:1h]
         )
+        -
+        avg_over_time(
+          %s [30d:1h]
+        )
       )
-    ||| % [openCostMonthlyCpuCostQuery, openCostMonthlyCpuCostQuery],
+      /
+      avg_over_time(
+        %s [30d:1h]
+      )
+    ||| % [openCostMonthlyCpuCostQuery, openCostMonthlyCpuCostQuery, openCostMonthlyCpuCostQuery],
 
     local openCostRamCostVariance30dQuery = |||
-      1 -
       (
-        avg_over_time(
-          %s [30d:1h]
-        )
-        /
         avg_over_time(
           %s [1d:1h]
         )
+        -
+        avg_over_time(
+          %s [30d:1h]
+        )
       )
-    ||| % [openCostMonthlyRamCostQuery, openCostMonthlyRamCostQuery],
+      /
+      avg_over_time(
+        %s [30d:1h]
+      )
+    ||| % [openCostMonthlyRamCostQuery, openCostMonthlyRamCostQuery, openCostMonthlyRamCostQuery],
 
     local openCostPVCostVariance30dQuery = |||
-      1 -
       (
-        avg_over_time(
-          (%s) [30d:1h]
-        )
-        /
         avg_over_time(
           (%s) [1d:1h]
         )
+        -
+        avg_over_time(
+          (%s) [30d:1h]
+        )
       )
-    ||| % [openCostMonthlyPVCostQuery, openCostMonthlyPVCostQuery],
+      /
+      avg_over_time(
+        (%s) [30d:1h]
+      )
+    ||| % [openCostMonthlyPVCostQuery, openCostMonthlyPVCostQuery, openCostMonthlyPVCostQuery],
 
     local openCostResourceCostVarianceTimeSeriesPanel =
       timeSeriesPanel.new(
