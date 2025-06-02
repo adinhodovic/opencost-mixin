@@ -41,21 +41,101 @@
       "description": "A significant increase in cluster costs has been detected. The average hourly cost over the 3 hours exceeds the 7-day average by more than 15%. This could indicate unexpected resource usage or cost-related changes in the cluster."
       "summary": "OpenCost Cost Anomaly Detected"
     "expr": |
-      1 -
-      avg_over_time(
-        sum(
-          node_total_hourly_cost{
-            job=~"opencost"
-          }
-        ) by (cluster) [7d:30m]
+      (
+        (
+          (
+            avg_over_time(
+              sum(
+                node_total_hourly_cost{
+                  job=~"opencost"
+                }
+              ) by (cluster) [3h:30m]
+            )
+            or vector(0)
+          )
+          +
+          (
+            avg_over_time(
+              sum(
+                (
+                  kube_persistentvolume_capacity_bytes{
+                    job=~"opencost"
+                  } / 1024 / 1024 / 1024
+                )
+                * on (cluster, persistentvolume)
+                group_left()
+                pv_hourly_cost{
+                  job=~"opencost"
+                }
+              ) by (cluster) [3h:30m]
+            )
+            or vector(0)
+          )
+        )
+        -
+        (
+          (
+            avg_over_time(
+              sum(
+                node_total_hourly_cost{
+                  job=~"opencost"
+                }
+              ) by (cluster) [7d:30m]
+            )
+            or vector(0)
+          )
+          +
+          (
+            avg_over_time(
+              sum(
+                (
+                  kube_persistentvolume_capacity_bytes{
+                    job=~"opencost"
+                  } / 1024 / 1024 / 1024
+                )
+                * on (cluster, persistentvolume)
+                group_left()
+                pv_hourly_cost{
+                  job=~"opencost"
+                }
+              ) by (cluster) [7d:30m]
+            )
+            or vector(0)
+          )
+        )
       )
       /
-      avg_over_time(
-        sum(
-          node_total_hourly_cost{
-            job=~"opencost"
-          }
-        ) by (cluster) [3h:30m]
+      (
+        (
+          (
+            avg_over_time(
+              sum(
+                node_total_hourly_cost{
+                  job=~"opencost"
+                }
+              ) by (cluster) [7d:30m]
+            )
+            or vector(0)
+          )
+          +
+          (
+            avg_over_time(
+              sum(
+                (
+                  kube_persistentvolume_capacity_bytes{
+                    job=~"opencost"
+                  } / 1024 / 1024 / 1024
+                )
+                * on (cluster, persistentvolume)
+                group_left()
+                pv_hourly_cost{
+                  job=~"opencost"
+                }
+              ) by (cluster) [7d:30m]
+            )
+            or vector(0)
+          )
+        )
       )
       > (15 / 100)
     "for": "10m"
