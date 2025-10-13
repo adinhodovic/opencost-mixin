@@ -10,7 +10,7 @@
       (
         sum(
           node_total_hourly_cost{
-            job=~"opencost"
+            job="opencost"
           }
         ) by (cluster) * 730
         or vector(0)
@@ -18,14 +18,14 @@
         sum(
           sum(
             kube_persistentvolume_capacity_bytes{
-              job=~"opencost"
+              job="opencost"
             }
             / 1024 / 1024 / 1024
           ) by (cluster, persistentvolume)
           *
           sum(
             pv_hourly_cost{
-              job=~"opencost"
+              job="opencost"
             }
           ) by (cluster, persistentvolume)
         ) * 730
@@ -47,7 +47,7 @@
             avg_over_time(
               sum(
                 node_total_hourly_cost{
-                  job=~"opencost"
+                  job="opencost"
                 }
               ) by (cluster) [3h:30m]
             )
@@ -59,13 +59,13 @@
               sum(
                 (
                   kube_persistentvolume_capacity_bytes{
-                    job=~"opencost"
+                    job="opencost"
                   } / 1024 / 1024 / 1024
                 )
                 * on (cluster, persistentvolume)
                 group_left()
                 pv_hourly_cost{
-                  job=~"opencost"
+                  job="opencost"
                 }
               ) by (cluster) [3h:30m]
             )
@@ -78,7 +78,7 @@
             avg_over_time(
               sum(
                 node_total_hourly_cost{
-                  job=~"opencost"
+                  job="opencost"
                 }
               ) by (cluster) [7d:30m]
             )
@@ -90,13 +90,13 @@
               sum(
                 (
                   kube_persistentvolume_capacity_bytes{
-                    job=~"opencost"
+                    job="opencost"
                   } / 1024 / 1024 / 1024
                 )
                 * on (cluster, persistentvolume)
                 group_left()
                 pv_hourly_cost{
-                  job=~"opencost"
+                  job="opencost"
                 }
               ) by (cluster) [7d:30m]
             )
@@ -111,7 +111,7 @@
             avg_over_time(
               sum(
                 node_total_hourly_cost{
-                  job=~"opencost"
+                  job="opencost"
                 }
               ) by (cluster) [7d:30m]
             )
@@ -123,13 +123,13 @@
               sum(
                 (
                   kube_persistentvolume_capacity_bytes{
-                    job=~"opencost"
+                    job="opencost"
                   } / 1024 / 1024 / 1024
                 )
                 * on (cluster, persistentvolume)
                 group_left()
                 pv_hourly_cost{
-                  job=~"opencost"
+                  job="opencost"
                 }
               ) by (cluster) [7d:30m]
             )
