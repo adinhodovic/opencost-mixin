@@ -101,45 +101,15 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       namespaceVariable,
     ],
 
-    local openCostHourlyCostQuery = |||
-      sum(
-        (
-          sum(container_memory_allocation_bytes{
-            %(clusterLabel)s="$cluster",
-            job=~"$job",
-            namespace=~"$namespace"
-          })
-          by (namespace, instance)
-          * on(instance) group_left()
-          (
-            avg(
-              node_ram_hourly_cost{
-                %(clusterLabel)s="$cluster",
-                job=~"$job"
-              }
-            ) by (instance) / (1024 * 1024 * 1024) * 1)
-        )
-        +
-        (
-          sum(
-            container_cpu_allocation{
-              %(clusterLabel)s="$cluster",
-              job=~"$job",
-              namespace=~"$namespace"
-            }
-          )
-          by (namespace, instance)
-          * on(instance) group_left()
-          (
-            avg(
-              node_cpu_hourly_cost{
-                %(clusterLabel)s="$cluster",
-                job=~"$job"
-              }
-            ) by (instance) * 1)
-        )
-      ) by (namespace)
-    ||| % $._config,
+    local openCostMonthlyCostQuery = |||
+      %s
+      +
+      %s
+      +
+      %s
+    ||| % [openCostMonthlyRamCostQuery, openCostMonthlyCpuCostQuery, openCostMonthlyPVCostQuery],
+    local openCostDailyCostQuery = std.strReplace(openCostMonthlyCostQuery, ') * 730', ') * 24'),
+    local openCostHourlyCostQuery = std.strReplace(openCostMonthlyCostQuery, ') * 730', ') * 1'),
 
     local openCostHourlyCostStatPanel =
       statPanel.new(
@@ -165,8 +135,6 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       ]),
 
 
-    local openCostDailyCostQuery = std.strReplace(openCostHourlyCostQuery, ') * 1', ') * 24'),
-
     local openCostDailyCostStatPanel =
       statPanel.new(
         'Daily Cost',
@@ -189,8 +157,6 @@ local pieQueryOptions = pieChartPanel.queryOptions;
         stStandardOptions.threshold.step.withValue(0.1) +
         stStandardOptions.threshold.step.withColor('green'),
       ]),
-
-    local openCostMonthlyCostQuery = std.strReplace(openCostHourlyCostQuery, ') * 1', ') * 730'),
 
     local openCostMonthlyCostStatPanel =
       statPanel.new(
@@ -430,7 +396,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
 
     // Keep job label formatting inconsistent due to strReplace
     local openCostPodMonthlyCostQuery = |||
-      topk(10,
+      topk(20,
         sum(
           (
             sum(
@@ -599,7 +565,7 @@ local pieQueryOptions = pieChartPanel.queryOptions;
       pieOptions.legend.withSortDesc(true),
 
     local openCostContainerMonthlyCostQuery = |||
-      topk(10,
+      topk(20,
         sum(
           (
             sum(
