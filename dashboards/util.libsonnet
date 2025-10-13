@@ -84,7 +84,7 @@ local query = variable.query;
       ) +
       query.withDatasourceFromVariable(this.datasource) +
       query.withSort() +
-      query.generalOptions.withLabel('Job') +
+      query.generalOptions.withLabel('Namespace') +
       query.selectionOptions.withMulti(false) +
       query.selectionOptions.withIncludeAll(false) +
       query.refresh.onLoad() +

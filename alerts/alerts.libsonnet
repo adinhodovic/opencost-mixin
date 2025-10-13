@@ -41,7 +41,7 @@
             annotations: {
               summary: 'OpenCost Monthly Budget Exceeded',
               description: 'The monthly budget for the cluster has been exceeded. Consider scaling down resources or increasing the budget.',
-              dashboard_url: $._config.openCostOverviewDashboardUrl + clusterVariableQueryString,
+              dashboard_url: $._config.dashboardUrls['opencost-overview'] + clusterVariableQueryString,
             },
           },
           {
@@ -152,7 +152,7 @@
             annotations: {
               summary: 'OpenCost Cost Anomaly Detected',
               description: 'A significant increase in cluster costs has been detected. The average hourly cost over the 3 hours exceeds the 7-day average by more than %s%%. This could indicate unexpected resource usage or cost-related changes in the cluster.' % $._config.alerts.anomaly.anomalyPercentageThreshold,
-              dashboard_url: $._config.openCostOverviewDashboardUrl + clusterVariableQueryString,
+              dashboard_url: $._config.dashboardUrls['opencost-overview'] + clusterVariableQueryString,
             },
           },
         ],

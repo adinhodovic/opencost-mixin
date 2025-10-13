@@ -126,7 +126,7 @@ local tbOverride = tbStandardOptions.override;
               }
             ) by (node, instance_type, arch)
           * 730
-        ||| % $._config,
+        ||| % defaultFilters,
 
         nodeMonthlyRamCost: |||
           sum(
@@ -144,7 +144,7 @@ local tbOverride = tbStandardOptions.override;
               }
             ) by (node, instance_type, arch)
           * 730
-        ||| % $._config,
+        ||| % defaultFilters,
 
         totalCostVariance7d: |||
           (
@@ -172,7 +172,7 @@ local tbOverride = tbStandardOptions.override;
               }
             ) [7d:1h]
           )
-        ||| % $._config,
+        ||| % defaultFilters,
 
         totalCostVariance30d: |||
           (
@@ -200,7 +200,7 @@ local tbOverride = tbStandardOptions.override;
               }
             ) [30d:1h]
           )
-        ||| % $._config,
+        ||| % defaultFilters,
 
         cpuCostVariance30d: |||
           (
@@ -256,33 +256,33 @@ local tbOverride = tbStandardOptions.override;
             sum(
               sum(
                 container_memory_allocation_bytes{
-                  %(clusterLabel)s="$cluster",
-                  job=~"$job"}
+                  %(cluster)s,
+                  %(job)s}
               ) by (namespace, instance)
               * on(instance) group_left()
                 (
                   node_ram_hourly_cost{
-                    %(clusterLabel)s="$cluster",
-                    job=~"$job"} / (1024 * 1024 * 1024) * 730
+                    %(cluster)s,
+                    %(job)s} / (1024 * 1024 * 1024) * 730
                 )
               +
               sum(
                 container_cpu_allocation{
-                  %(clusterLabel)s="$cluster",
-                  job=~"$job"}
+                  %(cluster)s,
+                  %(job)s}
               ) by (namespace, instance)
               * on(instance) group_left()
                 (
                   node_cpu_hourly_cost{
-                    %(clusterLabel)s="$cluster",
-                    job=~"$job"} * 730
+                    %(cluster)s,
+                    %(job)s} * 730
                 )
             ) by (namespace)
           )
         ||| % defaultFilters,
 
-        monthlyCostOffset7d: std.strReplace(queries.namespaceMonthlyCost, 'job=~"$job"}', 'job=~"$job"} offset 7d'),
-        monthlyCostOffset30d: std.strReplace(queries.namespaceMonthlyCost, 'job=~"$job"}', 'job=~"$job"} offset 30d'),
+        monthlyCostOffset7d: std.strReplace(queries.namespaceMonthlyCost, 'job="$job"}', 'job="$job"} offset 7d'),
+        monthlyCostOffset30d: std.strReplace(queries.namespaceMonthlyCost, 'job="$job"}', 'job="$job"} offset 30d'),
 
         costDifference7d: |||
           %s
@@ -345,47 +345,77 @@ local tbOverride = tbStandardOptions.override;
       };
 
       local panels = {
-        dailyCostStat: dashboards.statPanel(
-          'Daily Cost',
-          'currencyUSD',
-          queries.dailyCost,
-          description='Shows the total daily cost across the cluster.',
-        ),
+        dailyCostStat:
+          dashboards.statPanel(
+            'Daily Cost',
+            'currencyUSD',
+            queries.dailyCost,
+            graphMode='none',
+            decimals=2,
+            showPercentChange=true,
+            percentChangeColorMode='inverted',
+            description='Shows the total daily cost across the cluster.',
+          ),
 
-        hourlyCostStat: dashboards.statPanel(
-          'Hourly Cost',
-          'currencyUSD',
-          queries.hourlyCost,
-          description='Shows the total hourly cost across the cluster.',
-        ),
+        hourlyCostStat:
+          dashboards.statPanel(
+            'Hourly Cost',
+            'currencyUSD',
+            queries.hourlyCost,
+            graphMode='none',
+            decimals=2,
+            showPercentChange=true,
+            percentChangeColorMode='inverted',
+            description='Shows the total hourly cost across the cluster.',
+          ),
 
-        monthlyCostStat: dashboards.statPanel(
-          'Monthly Cost',
-          'currencyUSD',
-          queries.monthlyCost,
-          description='Shows the total monthly cost across the cluster.',
-        ),
+        monthlyCostStat:
+          dashboards.statPanel(
+            'Monthly Cost',
+            'currencyUSD',
+            queries.monthlyCost,
+            graphMode='none',
+            decimals=2,
+            showPercentChange=true,
+            percentChangeColorMode='inverted',
+            description='Shows the total monthly cost across the cluster.',
+          ),
 
-        monthlyRamCostStat: dashboards.statPanel(
-          'Monthly Ram Cost',
-          'currencyUSD',
-          queries.monthlyRamCost,
-          description='Shows the total monthly RAM cost across the cluster.',
-        ),
+        monthlyRamCostStat:
+          dashboards.statPanel(
+            'Monthly Ram Cost',
+            'currencyUSD',
+            queries.monthlyRamCost,
+            graphMode='none',
+            decimals=2,
+            showPercentChange=true,
+            percentChangeColorMode='inverted',
+            description='Shows the total monthly RAM cost across the cluster.',
+          ),
 
-        monthlyCpuCostStat: dashboards.statPanel(
-          'Monthly CPU Cost',
-          'currencyUSD',
-          queries.monthlyCpuCost,
-          description='Shows the total monthly CPU cost across the cluster.',
-        ),
+        monthlyCpuCostStat:
+          dashboards.statPanel(
+            'Monthly CPU Cost',
+            'currencyUSD',
+            queries.monthlyCpuCost,
+            graphMode='none',
+            decimals=2,
+            showPercentChange=true,
+            percentChangeColorMode='inverted',
+            description='Shows the total monthly CPU cost across the cluster.',
+          ),
 
-        monthlyPVCostStat: dashboards.statPanel(
-          'Monthly PV Cost',
-          'currencyUSD',
-          queries.monthlyPVCost,
-          description='Shows the total monthly Persistent Volume cost across the cluster.',
-        ),
+        monthlyPVCostStat:
+          dashboards.statPanel(
+            'Monthly PV Cost',
+            'currencyUSD',
+            queries.monthlyPVCost,
+            graphMode='none',
+            decimals=2,
+            showPercentChange=true,
+            percentChangeColorMode='inverted',
+            description='Shows the total monthly Persistent Volume cost across the cluster.',
+          ),
 
         hourCostTimeSeries:
           dashboards.timeSeriesPanel(
@@ -422,13 +452,39 @@ local tbOverride = tbStandardOptions.override;
               {
                 expr: queries.totalCostVariance7d,
                 legend: 'Current hourly cost vs. 7-day average',
+                interval: '30m',
               },
               {
                 expr: queries.totalCostVariance30d,
                 legend: 'Current hourly cost vs. 30-day average',
+                interval: '30m',
               },
             ],
             description='Shows the total cost variance across the cluster.',
+          ),
+
+        resourceCostVarianceTimeSeries:
+          dashboards.timeSeriesPanel(
+            'Resource Cost Variance',
+            'percentunit',
+            [
+              {
+                expr: queries.cpuCostVariance30d,
+                legend: 'CPU Cost vs. 30-day average',
+                interval: '30m',
+              },
+              {
+                expr: queries.ramCostVariance30d,
+                legend: 'RAM Cost vs. 30-day average',
+                interval: '30m',
+              },
+              {
+                expr: queries.pvCostVariance30d,
+                legend: 'PV Cost vs. 30-day average',
+                interval: '30m',
+              },
+            ],
+            description='Shows the resource cost variance across the cluster.',
           ),
 
         resourceCostPieChartPanel:
@@ -450,6 +506,7 @@ local tbOverride = tbStandardOptions.override;
               },
             ],
             description='Shows the cost by resource across the cluster.',
+            values=['percent', 'value']
           ),
 
         namespaceCostPieChartPanel:
@@ -459,6 +516,7 @@ local tbOverride = tbStandardOptions.override;
             queries.namespaceMonthlyCost,
             '{{ namespace }}',
             description='Shows the cost by namespace across the cluster.',
+            values=['percent', 'value']
           ),
 
         instanceTypeCostPieChartPanel:
@@ -468,6 +526,7 @@ local tbOverride = tbStandardOptions.override;
             queries.instanceTypeCost,
             '{{ instance_type }}',
             description='Shows the cost by instance type across the cluster.',
+            values=['percent', 'value']
           ),
 
         nodeTable:
@@ -488,7 +547,7 @@ local tbOverride = tbStandardOptions.override;
             description='Shows the monthly cost by node across the cluster.',
             sortBy={
               name: 'Total Cost',
-              desc: false,
+              desc: true,
             },
             transformations=[
               tbQueryOptions.transformation.withId(
@@ -539,7 +598,7 @@ local tbOverride = tbStandardOptions.override;
             description='Shows the monthly cost by persistent volume across the cluster.',
             sortBy={
               name: 'Total Cost',
-              desc: false,
+              desc: true,
             },
             transformations=[
               tbQueryOptions.transformation.withId(
@@ -584,10 +643,10 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.namespaceMonthlyCost,
               },
               {
-                expr: queries.monthlyCostOffset7d,
+                expr: queries.costDifference7d,
               },
               {
-                expr: queries.monthlyCostOffset30d,
+                expr: queries.costDifference7d,
               },
             ],
             description='Shows the monthly cost by namespace across the cluster.',
@@ -646,7 +705,7 @@ local tbOverride = tbStandardOptions.override;
                   tbPanelOptions.link.withTitle('Go To Namespace') +
                   tbPanelOptions.link.withType('dashboard') +
                   tbPanelOptions.link.withUrl(
-                    '/d/%s/opencost-namespace?var-job=$job&var-namespace=${__data.fields.Namespace}' % $._config.openCostNamespaceDashboardUid
+                    '/d/%s/opencost-namespace?var-job=$job&var-namespace=${__data.fields.Namespace}' % $._config.dashboardIds['opencost-namespace']
                   ) +
                   tbPanelOptions.link.withTargetBlank(true)
                 )
@@ -707,6 +766,7 @@ local tbOverride = tbStandardOptions.override;
         grid.wrapPanels(
           [
             panels.totalCostVarianceTimeSeries,
+            panels.resourceCostVarianceTimeSeries,
           ],
           panelWidth=12,
           panelHeight=5,
@@ -746,7 +806,6 @@ local tbOverride = tbStandardOptions.override;
       dashboard.new(
         'OpenCost / Overview',
       ) +
-      dashboard.withDescription('A dashboard that monitors OpenCost and focuses on giving a overview for OpenCost. It is created using the [opencost-mixin](https://github.com/adinhodovic/opencost-mixin).') +
       dashboard.withDescription('A dashboard that monitors OpenCost and focuses on giving a overview for OpenCost. %s' % mixinUtils.dashboards.dashboardDescriptionLink('opencost-mixin', 'https://github.com/adinhodovic/opencost-mixin')) +
       dashboard.withUid($._config.dashboardIds[dashboardName]) +
       dashboard.withTags($._config.tags) +

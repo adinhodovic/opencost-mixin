@@ -10,7 +10,7 @@ local annotation = g.dashboard.annotation;
       __requires: [],
     },
 
-    openCostSelector: 'job=~"opencost"',
+    openCostSelector: 'job="opencost"',
 
     // Default datasource name
     datasourceName: 'default',
@@ -21,10 +21,14 @@ local annotation = g.dashboard.annotation;
 
     grafanaUrl: 'https://grafana.com',
 
-    openCostOverviewDashboardUid: 'opencost-mixin-kover-jkwq',
-    openCostOverviewDashboardUrl: '%s/d/%s/opencost-overview' % [this.grafanaUrl, this.openCostOverviewDashboardUid],
-    openCostNamespaceDashboardUid: 'opencost-mixin-namespace-jkwq',
-    openCostNamespaceDashboardUrl: '%s/d/%s/opencost-namespace' % [this.grafanaUrl, this.openCostNamespaceDashboardUid],
+    dashboardIds: {
+      'opencost-overview': 'opencost-mixin-kover-jkwq',
+      'opencost-namespace': 'opencost-mixin-namespace-jkwq',
+    },
+    dashboardUrls: {
+      'opencost-overview': '%s/d/%s/opencost-overview' % [this.grafanaUrl, this.dashboardIds['opencost-overview']],
+      'opencost-namespace': '%s/d/%s/opencost-namespace' % [this.grafanaUrl, this.dashboardIds['opencost-namespace']],
+    },
 
     alerts: {
       budget: {
