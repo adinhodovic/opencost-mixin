@@ -420,7 +420,7 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.podMonthlyCostDifference30d,
               },
             ],
-            description='Top 10 pods by projected monthly cost (based on current hourly rates) with cost difference percentages compared to 7 days and 30 days ago. Color-coded cells highlight cost increases (red) and decreases (green). Use this to identify the most expensive pods in the namespace and track how pod costs change over time, especially after deployments or configuration changes.',
+            description='Top 10 pods by projected monthly cost (based on current hourly rates) with percentage change compared to 7 days and 30 days ago. Positive percentages indicate cost increases (red), negative percentages indicate cost decreases (green). Use this to identify the most expensive pods in the namespace and track how pod costs change over time, especially after deployments or configuration changes.',
             sortBy={
               name: 'Total Cost (Today)',
               desc: true,
@@ -437,8 +437,8 @@ local tbOverride = tbStandardOptions.override;
                   renameByName: {
                     pod: 'Pod',
                     'Value #A': 'Monthly Cost',
-                    'Value #B': 'Cost Difference (7d)',
-                    'Value #C': 'Cost Difference (30d)',
+                    'Value #B': 'Cost Change vs 7d Ago (%)',
+                    'Value #C': 'Cost Change vs 30d Ago (%)',
                   },
                   indexByName: {
                     pod: 0,
@@ -454,7 +454,7 @@ local tbOverride = tbStandardOptions.override;
               ),
             ],
             overrides=[
-              tbOverride.byName.new('Cost Difference (7d)') +
+              tbOverride.byName.new('Cost Change vs 7d Ago (%)') +
               tbOverride.byName.withPropertiesFromOptions(
                 tbStandardOptions.withUnit('percent') +
                 tbFieldConfig.defaults.custom.withCellOptions(
@@ -462,7 +462,7 @@ local tbOverride = tbStandardOptions.override;
                 ) +
                 tbStandardOptions.color.withMode('thresholds')
               ),
-              tbOverride.byName.new('Cost Difference (30d)') +
+              tbOverride.byName.new('Cost Change vs 30d Ago (%)') +
               tbOverride.byName.withPropertiesFromOptions(
                 tbStandardOptions.withUnit('percent') +
                 tbFieldConfig.defaults.custom.withCellOptions(
@@ -510,7 +510,7 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.containerMonthlyCostDifference30d,
               },
             ],
-            description='Top 10 containers by current monthly cost with cost difference percentages compared to 7 days and 30 days ago. Color-coded cells highlight cost increases (red) and decreases (green). This granular view helps identify specific containers within pods that are driving costs, useful for optimizing multi-container pod configurations.',
+            description='Top 10 containers by current monthly cost with percentage change compared to 7 days and 30 days ago. Positive percentages indicate cost increases (red), negative percentages indicate cost decreases (green). This granular view helps identify specific containers within pods that are driving costs, useful for optimizing multi-container pod configurations.',
             sortBy={
               name: 'Monthly Cost',
               desc: true,
@@ -527,8 +527,8 @@ local tbOverride = tbStandardOptions.override;
                   renameByName: {
                     container: 'Container',
                     'Value #A': 'Monthly Cost',
-                    'Value #B': 'Cost Difference (7d)',
-                    'Value #C': 'Cost Difference (30d)',
+                    'Value #B': 'Cost Change vs 7d Ago (%)',
+                    'Value #C': 'Cost Change vs 30d Ago (%)',
                   },
                   indexByName: {
                     container: 0,
@@ -544,7 +544,7 @@ local tbOverride = tbStandardOptions.override;
               ),
             ],
             overrides=[
-              tbOverride.byName.new('Cost Difference (7d)') +
+              tbOverride.byName.new('Cost Change vs 7d Ago (%)') +
               tbOverride.byName.withPropertiesFromOptions(
                 tbStandardOptions.withUnit('percent') +
                 tbFieldConfig.defaults.custom.withCellOptions(
@@ -552,7 +552,7 @@ local tbOverride = tbStandardOptions.override;
                 ) +
                 tbStandardOptions.color.withMode('thresholds')
               ),
-              tbOverride.byName.new('Cost Difference (30d)') +
+              tbOverride.byName.new('Cost Change vs 30d Ago (%)') +
               tbOverride.byName.withPropertiesFromOptions(
                 tbStandardOptions.withUnit('percent') +
                 tbFieldConfig.defaults.custom.withCellOptions(

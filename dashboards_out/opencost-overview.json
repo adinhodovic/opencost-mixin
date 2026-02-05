@@ -1002,7 +1002,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Top 10 namespaces by current monthly cost with cost difference percentages compared to 7 days and 30 days ago. Color-coded cells highlight cost increases (red) and decreases (green). Click on a namespace name to drill down into detailed pod and container costs. Use this to track namespace-level spending trends and identify teams or applications with growing costs.",
+         "description": "Top 10 namespaces by current monthly cost with percentage change compared to 7 days and 30 days ago. Positive percentages indicate cost increases (red), negative percentages indicate cost decreases (green). Click on a namespace name to drill down into detailed pod and container costs. Use this to track namespace-level spending trends and identify teams or applications with growing costs.",
          "fieldConfig": {
             "defaults": {
                "thresholds": {
@@ -1027,7 +1027,7 @@
                {
                   "matcher": {
                      "id": "byName",
-                     "options": "Cost Difference (7d)"
+                     "options": "Cost Change vs 7d Ago (%)"
                   },
                   "properties": [
                      {
@@ -1051,7 +1051,7 @@
                {
                   "matcher": {
                      "id": "byName",
-                     "options": "Cost Difference (30d)"
+                     "options": "Cost Change vs 30d Ago (%)"
                   },
                   "properties": [
                      {
@@ -1161,8 +1161,8 @@
                   },
                   "renameByName": {
                      "Value #A": "Monthly Cost",
-                     "Value #B": "Cost Difference (7d)",
-                     "Value #C": "Cost Difference (30d)",
+                     "Value #B": "Cost Change vs 7d Ago (%)",
+                     "Value #C": "Cost Change vs 30d Ago (%)",
                      "namespace": "Namespace"
                   }
                }
