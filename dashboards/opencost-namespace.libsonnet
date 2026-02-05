@@ -294,7 +294,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total daily cost across the cluster.',
+            description='Current hourly cost rate for the selected namespace, including CPU, RAM, and PV costs. This provides real-time visibility into namespace spending and helps track the immediate impact of workload changes on costs.',
           ),
 
         dailyCostStat:
@@ -306,7 +306,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total daily cost across the cluster.',
+            description='Total daily cost for the selected namespace. The percentage change indicates cost variance compared to the previous period, helping application teams monitor their daily spending and detect unexpected cost increases.',
           ),
 
         monthlyCostStat:
@@ -318,7 +318,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total monthly cost across the cluster.',
+            description='Projected monthly cost for the selected namespace based on current hourly rates. Application teams can use this to track their budget allocation and ensure they stay within their cost targets.',
           ),
 
         monthlyRamCostStat:
@@ -330,7 +330,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total monthly RAM cost across the cluster.',
+            description='Projected monthly RAM cost for the selected namespace. High memory costs may indicate opportunities to optimize container memory requests or identify memory-intensive workloads that could benefit from tuning.',
           ),
 
         monthlyCpuCostStat:
@@ -342,7 +342,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total monthly CPU cost across the cluster.',
+            description='Projected monthly CPU cost for the selected namespace. Compare this with RAM costs to understand your namespace compute profile and identify if CPU requests are appropriately sized for your workloads.',
           ),
 
         monthlyPVCostStat:
@@ -354,7 +354,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total monthly Persistent Volume cost across the cluster.',
+            description='Projected monthly Persistent Volume cost for the selected namespace. Monitor this to identify unused PVCs or opportunities to migrate to cheaper storage classes without impacting application performance.',
           ),
 
         dailyCostTimeSeries:
@@ -367,7 +367,7 @@ local tbOverride = tbStandardOptions.override;
                 legend: 'Daily Cost',
               },
             ],
-            description='Shows the total daily cost across the cluster over time.',
+            description='Daily cost trend for the selected namespace over time. Use this to track how namespace costs evolve, identify cost spikes related to deployments or scaling events, and validate that cost optimization efforts are effective.',
           ),
 
         monthlyCostTimeSeries:
@@ -380,7 +380,7 @@ local tbOverride = tbStandardOptions.override;
                 legend: 'Monthly Cost',
               },
             ],
-            description='Shows the total monthly cost across the cluster over time.',
+            description='Monthly cost projection trend for the selected namespace. This helps application teams track their projected monthly spending and ensure they remain within their allocated budget throughout the billing period.',
           ),
 
         resourceCostPieChart:
@@ -401,7 +401,7 @@ local tbOverride = tbStandardOptions.override;
                 legend: 'PV',
               },
             ],
-            description='Shows the cost by resource across the cluster.',
+            description='Monthly cost distribution for the selected namespace across resource types (CPU, RAM, Persistent Volumes). This shows which resource category is the primary cost driver for this namespace, helping teams prioritize their optimization efforts.',
             values=['percent', 'value']
           ),
 
@@ -420,6 +420,7 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.podMonthlyCostDifference30d,
               },
             ],
+            description='Top 10 pods by projected monthly cost (based on current hourly rates) with percentage change compared to 7 days and 30 days ago. Positive percentages indicate cost increases (red), negative percentages indicate cost decreases (green). Use this to identify the most expensive pods in the namespace and track how pod costs change over time, especially after deployments or configuration changes.',
             sortBy={
               name: 'Total Cost (Today)',
               desc: true,
@@ -435,9 +436,9 @@ local tbOverride = tbStandardOptions.override;
                 {
                   renameByName: {
                     pod: 'Pod',
-                    'Value #A': 'Total Cost (Today)',
-                    'Value #B': 'Cost Difference (7d)',
-                    'Value #C': 'Cost Difference (30d)',
+                    'Value #A': 'Monthly Cost',
+                    'Value #B': 'Cost Change vs 7d Ago (%)',
+                    'Value #C': 'Cost Change vs 30d Ago (%)',
                   },
                   indexByName: {
                     pod: 0,
@@ -453,7 +454,7 @@ local tbOverride = tbStandardOptions.override;
               ),
             ],
             overrides=[
-              tbOverride.byName.new('Cost Difference (7d)') +
+              tbOverride.byName.new('Cost Change vs 7d Ago (%)') +
               tbOverride.byName.withPropertiesFromOptions(
                 tbStandardOptions.withUnit('percent') +
                 tbFieldConfig.defaults.custom.withCellOptions(
@@ -461,7 +462,7 @@ local tbOverride = tbStandardOptions.override;
                 ) +
                 tbStandardOptions.color.withMode('thresholds')
               ),
-              tbOverride.byName.new('Cost Difference (30d)') +
+              tbOverride.byName.new('Cost Change vs 30d Ago (%)') +
               tbOverride.byName.withPropertiesFromOptions(
                 tbStandardOptions.withUnit('percent') +
                 tbFieldConfig.defaults.custom.withCellOptions(
@@ -491,7 +492,7 @@ local tbOverride = tbStandardOptions.override;
               },
             ],
             values=['percent', 'value'],
-            description='Shows the cost by pod across the cluster.',
+            description='Top 10 pods by monthly cost showing the distribution of spending across pods in the namespace. This visualization helps identify which pods consume the most resources and whether costs are evenly distributed or concentrated in a few workloads.',
           ),
 
         containerTable:
@@ -509,8 +510,9 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.containerMonthlyCostDifference30d,
               },
             ],
+            description='Top 10 containers by current monthly cost with percentage change compared to 7 days and 30 days ago. Positive percentages indicate cost increases (red), negative percentages indicate cost decreases (green). This granular view helps identify specific containers within pods that are driving costs, useful for optimizing multi-container pod configurations.',
             sortBy={
-              name: 'Total Cost (Today)',
+              name: 'Monthly Cost',
               desc: true,
             },
             transformations=[
@@ -524,9 +526,9 @@ local tbOverride = tbStandardOptions.override;
                 {
                   renameByName: {
                     container: 'Container',
-                    'Value #A': 'Total Cost (Today)',
-                    'Value #B': 'Cost Difference (7d)',
-                    'Value #C': 'Cost Difference (30d)',
+                    'Value #A': 'Monthly Cost',
+                    'Value #B': 'Cost Change vs 7d Ago (%)',
+                    'Value #C': 'Cost Change vs 30d Ago (%)',
                   },
                   indexByName: {
                     container: 0,
@@ -542,7 +544,7 @@ local tbOverride = tbStandardOptions.override;
               ),
             ],
             overrides=[
-              tbOverride.byName.new('Cost Difference (7d)') +
+              tbOverride.byName.new('Cost Change vs 7d Ago (%)') +
               tbOverride.byName.withPropertiesFromOptions(
                 tbStandardOptions.withUnit('percent') +
                 tbFieldConfig.defaults.custom.withCellOptions(
@@ -550,7 +552,7 @@ local tbOverride = tbStandardOptions.override;
                 ) +
                 tbStandardOptions.color.withMode('thresholds')
               ),
-              tbOverride.byName.new('Cost Difference (30d)') +
+              tbOverride.byName.new('Cost Change vs 30d Ago (%)') +
               tbOverride.byName.withPropertiesFromOptions(
                 tbStandardOptions.withUnit('percent') +
                 tbFieldConfig.defaults.custom.withCellOptions(
@@ -580,7 +582,7 @@ local tbOverride = tbStandardOptions.override;
               },
             ],
             values=['percent', 'value'],
-            description='Shows the cost by container across the cluster.',
+            description='Top 10 containers by monthly cost showing the distribution of spending across containers in the namespace. This helps identify which container images or workload types are most expensive and whether sidecar containers are adding significant costs.',
           ),
 
         pvTable:
@@ -595,8 +597,9 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.pvMonthlyCostByPv,
               },
             ],
+            description='List of Persistent Volumes used by the selected namespace with their capacity (in GiB) and monthly cost, sorted by total cost. Use this to identify large or expensive volumes that may be candidates for cleanup, resizing, or migration to cheaper storage classes.',
             sortBy={
-              name: 'Total Cost',
+              name: 'Monthly Cost',
               desc: true,
             },
             transformations=[
@@ -645,7 +648,7 @@ local tbOverride = tbStandardOptions.override;
               },
             ],
             values=['percent', 'value'],
-            description='Shows the cost by persistent volume across the cluster.',
+            description='Distribution of monthly storage costs across Persistent Volumes in the namespace. This shows which volumes consume the most storage budget and helps identify if storage costs are concentrated in a few large volumes or distributed across many smaller ones.',
           ),
       };
 
@@ -744,7 +747,7 @@ local tbOverride = tbStandardOptions.override;
       dashboard.new(
         'OpenCost / Namespace',
       ) +
-      dashboard.withDescription('A dashboard that monitors OpenCost and focuses on namespace costs. %s' % mixinUtils.dashboards.dashboardDescriptionLink('opencost-mixin', 'https://github.com/adinhodovic/opencost-mixin')) +
+      dashboard.withDescription('A detailed namespace-level cost analysis dashboard that breaks down infrastructure spending by pods, containers, and persistent volumes within a selected namespace. Use this dashboard to understand which workloads are driving costs within a namespace, track cost trends over time, and identify optimization opportunities at the pod and container level. This dashboard is ideal for application teams monitoring their own resource consumption and costs. %s' % mixinUtils.dashboards.dashboardDescriptionLink('opencost-mixin', 'https://github.com/adinhodovic/opencost-mixin')) +
       dashboard.withUid($._config.dashboardIds[dashboardName]) +
       dashboard.withTags($._config.tags) +
       dashboard.withTimezone('utc') +

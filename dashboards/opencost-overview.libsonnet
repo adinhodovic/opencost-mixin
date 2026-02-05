@@ -354,7 +354,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total daily cost across the cluster.',
+            description='Total daily infrastructure cost across the cluster, including compute (CPU, RAM) and storage (PV) costs. The percentage change indicates cost variance compared to the previous period, helping identify sudden cost increases or decreases.',
           ),
 
         hourlyCostStat:
@@ -366,7 +366,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total hourly cost across the cluster.',
+            description='Current hourly infrastructure cost rate across the cluster. This metric provides real-time cost visibility and can be used to project daily and monthly spending. The percentage change helps track cost fluctuations over time.',
           ),
 
         monthlyCostStat:
@@ -378,7 +378,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total monthly cost across the cluster.',
+            description='Projected monthly infrastructure cost based on current hourly rates (730 hours per month). This projection helps with budget planning and cost forecasting. Compare this value against your budget to ensure spending stays within limits.',
           ),
 
         monthlyRamCostStat:
@@ -390,7 +390,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total monthly RAM cost across the cluster.',
+            description='Projected monthly cost for RAM (memory) resources across all cluster nodes. This metric helps identify if memory is a significant cost driver and can guide decisions about node sizing and memory allocation strategies.',
           ),
 
         monthlyCpuCostStat:
@@ -402,7 +402,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total monthly CPU cost across the cluster.',
+            description='Projected monthly cost for CPU (compute) resources across all cluster nodes. Compare this with RAM costs to understand your compute vs. memory cost ratio and optimize instance type selection accordingly.',
           ),
 
         monthlyPVCostStat:
@@ -414,7 +414,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Shows the total monthly Persistent Volume cost across the cluster.',
+            description='Projected monthly cost for Persistent Volume (storage) resources across the cluster. Monitor this metric to identify unused or oversized volumes that can be optimized to reduce storage costs.',
           ),
 
         hourCostTimeSeries:
@@ -423,7 +423,7 @@ local tbOverride = tbStandardOptions.override;
             'currencyUSD',
             queries.hourlyCost,
             'Hourly Cost',
-            description='Shows the hourly cost across the cluster.',
+            description='Hourly cost trend over time showing how infrastructure spending fluctuates throughout the day. Use this to identify cost spikes, correlate costs with workload patterns, and detect autoscaling behavior impact on spending.',
           ),
 
         dailyCostTimeSeries:
@@ -432,7 +432,7 @@ local tbOverride = tbStandardOptions.override;
             'currencyUSD',
             queries.dailyCost,
             'Daily Cost',
-            description='Shows the daily cost across the cluster.',
+            description='Daily cost trend showing infrastructure spending patterns over multiple days. This view helps identify day-over-day cost changes, weekly patterns, and the impact of infrastructure changes on overall spending.',
           ),
 
         monthlyCostTimeSeries:
@@ -441,7 +441,7 @@ local tbOverride = tbStandardOptions.override;
             'currencyUSD',
             queries.monthlyCost,
             'Monthly Cost',
-            description='Shows the monthly cost across the cluster.',
+            description='Monthly cost projection trend over time. This visualization helps track how your projected monthly spending evolves and whether you are staying within budget throughout the billing period.',
           ),
 
         totalCostVarianceTimeSeries:
@@ -460,7 +460,7 @@ local tbOverride = tbStandardOptions.override;
                 interval: '30m',
               },
             ],
-            description='Shows the total cost variance across the cluster.',
+            description='Cost variance comparing current hourly costs against 7-day and 30-day historical averages. Positive values indicate costs are higher than average, negative values indicate lower costs. Use this to detect cost anomalies and unusual spending patterns that may require investigation.',
           ),
 
         resourceCostVarianceTimeSeries:
@@ -484,7 +484,7 @@ local tbOverride = tbStandardOptions.override;
                 interval: '30m',
               },
             ],
-            description='Shows the resource cost variance across the cluster.',
+            description='Resource-specific cost variance comparing current CPU, RAM, and PV costs against their 30-day historical averages. This breakdown helps identify which resource type is driving cost changes - useful for pinpointing whether cost increases are due to compute scaling, memory usage, or storage growth.',
           ),
 
         resourceCostPieChartPanel:
@@ -505,7 +505,7 @@ local tbOverride = tbStandardOptions.override;
                 legend: 'PV',
               },
             ],
-            description='Shows the cost by resource across the cluster.',
+            description='Monthly cost distribution across resource types (CPU, RAM, Persistent Volumes). This breakdown shows which resource category consumes the most budget, helping prioritize optimization efforts. For example, if PV costs dominate, focus on storage optimization.',
             values=['percent', 'value']
           ),
 
@@ -515,7 +515,7 @@ local tbOverride = tbStandardOptions.override;
             'currencyUSD',
             queries.namespaceMonthlyCost,
             '{{ namespace }}',
-            description='Shows the cost by namespace across the cluster.',
+            description='Top 10 namespaces by monthly cost showing which teams, applications, or environments consume the most resources. Use this to allocate costs to teams, identify expensive applications, and ensure fair resource distribution across the organization.',
             values=['percent', 'value']
           ),
 
@@ -525,7 +525,7 @@ local tbOverride = tbStandardOptions.override;
             'currencyUSD',
             queries.instanceTypeCost,
             '{{ instance_type }}',
-            description='Shows the cost by instance type across the cluster.',
+            description='Top 10 instance types by monthly cost showing which VM/node types contribute most to infrastructure spending. This helps evaluate whether your instance type selection is cost-effective and identify opportunities to switch to more economical instance families.',
             values=['percent', 'value']
           ),
 
@@ -544,7 +544,7 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.nodeTotalCost,
               },
             ],
-            description='Shows the monthly cost by node across the cluster.',
+            description='Detailed breakdown of monthly costs per node, showing CPU cost, RAM cost, and total cost for each node along with instance type and architecture. Sorted by total cost to highlight the most expensive nodes. Use this to identify underutilized expensive nodes that could be downsized or removed.',
             sortBy={
               name: 'Total Cost',
               desc: true,
@@ -595,7 +595,7 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.pvMonthlyCost,
               },
             ],
-            description='Shows the monthly cost by persistent volume across the cluster.',
+            description='List of all Persistent Volumes with their capacity (in GiB) and monthly cost, sorted by total cost. Use this to identify large or expensive volumes that may be candidates for cleanup, resizing, or migration to cheaper storage classes.',
             sortBy={
               name: 'Total Cost',
               desc: true,
@@ -649,9 +649,9 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.costDifference7d,
               },
             ],
-            description='Shows the monthly cost by namespace across the cluster.',
+            description='Top 10 namespaces by current monthly cost with percentage change compared to 7 days and 30 days ago. Positive percentages indicate cost increases (red), negative percentages indicate cost decreases (green). Click on a namespace name to drill down into detailed pod and container costs. Use this to track namespace-level spending trends and identify teams or applications with growing costs.',
             sortBy={
-              name: 'Total Cost (Today)',
+              name: 'Monthly Cost',
               desc: true,
             },
             transformations=[
@@ -665,9 +665,9 @@ local tbOverride = tbStandardOptions.override;
                 {
                   renameByName: {
                     namespace: 'Namespace',
-                    'Value #A': 'Total Cost (Today)',
-                    'Value #B': 'Cost Difference (7d)',
-                    'Value #C': 'Cost Difference (30d)',
+                    'Value #A': 'Monthly Cost',
+                    'Value #B': 'Cost Change vs 7d Ago (%)',
+                    'Value #C': 'Cost Change vs 30d Ago (%)',
                   },
                   indexByName: {
                     namespace: 0,
@@ -683,7 +683,7 @@ local tbOverride = tbStandardOptions.override;
               ),
             ],
             overrides=[
-              tbOverride.byName.new('Cost Difference (7d)') +
+              tbOverride.byName.new('Cost Change vs 7d Ago (%)') +
               tbOverride.byName.withPropertiesFromOptions(
                 tbStandardOptions.withUnit('percent') +
                 tbFieldConfig.defaults.custom.withCellOptions(
@@ -691,7 +691,7 @@ local tbOverride = tbStandardOptions.override;
                 ) +
                 tbStandardOptions.color.withMode('thresholds')
               ),
-              tbOverride.byName.new('Cost Difference (30d)') +
+              tbOverride.byName.new('Cost Change vs 30d Ago (%)') +
               tbOverride.byName.withPropertiesFromOptions(
                 tbStandardOptions.withUnit('percent') +
                 tbFieldConfig.defaults.custom.withCellOptions(
@@ -806,7 +806,7 @@ local tbOverride = tbStandardOptions.override;
       dashboard.new(
         'OpenCost / Overview',
       ) +
-      dashboard.withDescription('A dashboard that monitors OpenCost and focuses on giving a overview for OpenCost. %s' % mixinUtils.dashboards.dashboardDescriptionLink('opencost-mixin', 'https://github.com/adinhodovic/opencost-mixin')) +
+      dashboard.withDescription('A comprehensive overview dashboard for OpenCost that displays cluster-wide cost metrics including hourly, daily, and monthly costs broken down by resource type (CPU, RAM, PV), instance type, namespace, and individual nodes. Use this dashboard to monitor overall infrastructure spending, identify cost trends, and detect cost anomalies across your Kubernetes cluster. %s' % mixinUtils.dashboards.dashboardDescriptionLink('opencost-mixin', 'https://github.com/adinhodovic/opencost-mixin')) +
       dashboard.withUid($._config.dashboardIds[dashboardName]) +
       dashboard.withTags($._config.tags) +
       dashboard.withTimezone('utc') +
