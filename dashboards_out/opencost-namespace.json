@@ -4,7 +4,7 @@
    "annotations": {
       "list": [ ]
    },
-   "description": "A dashboard that monitors OpenCost and focuses on namespace costs. The dashboards were generated using opencost-mixin. https://github.com/adinhodovic/opencost-mixin. Open issues and create feature requests in the repository.",
+   "description": "A detailed namespace-level cost analysis dashboard that breaks down infrastructure spending by pods, containers, and persistent volumes within a selected namespace. Use this dashboard to understand which workloads are driving costs within a namespace, track cost trends over time, and identify optimization opportunities at the pod and container level. This dashboard is ideal for application teams monitoring their own resource consumption and costs. The dashboards were generated using opencost-mixin. https://github.com/adinhodovic/opencost-mixin. Open issues and create feature requests in the repository.",
    "editable": false,
    "links": [
       {
@@ -38,7 +38,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the total daily cost across the cluster.",
+         "description": "Current hourly cost rate for the selected namespace, including CPU, RAM, and PV costs. This provides real-time visibility into namespace spending and helps track the immediate impact of workload changes on costs.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -85,7 +85,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the total daily cost across the cluster.",
+         "description": "Total daily cost for the selected namespace. The percentage change indicates cost variance compared to the previous period, helping application teams monitor their daily spending and detect unexpected cost increases.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -132,7 +132,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the total monthly cost across the cluster.",
+         "description": "Projected monthly cost for the selected namespace based on current hourly rates. Application teams can use this to track their budget allocation and ensure they stay within their cost targets.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -179,7 +179,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the total monthly CPU cost across the cluster.",
+         "description": "Projected monthly CPU cost for the selected namespace. Compare this with RAM costs to understand your namespace compute profile and identify if CPU requests are appropriately sized for your workloads.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -226,7 +226,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the total monthly RAM cost across the cluster.",
+         "description": "Projected monthly RAM cost for the selected namespace. High memory costs may indicate opportunities to optimize container memory requests or identify memory-intensive workloads that could benefit from tuning.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -273,7 +273,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the total monthly Persistent Volume cost across the cluster.",
+         "description": "Projected monthly Persistent Volume cost for the selected namespace. Monitor this to identify unused PVCs or opportunities to migrate to cheaper storage classes without impacting application performance.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -320,7 +320,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the total daily cost across the cluster over time.",
+         "description": "Daily cost trend for the selected namespace over time. Use this to track how namespace costs evolve, identify cost spikes related to deployments or scaling events, and validate that cost optimization efforts are effective.",
          "fieldConfig": {
             "defaults": {
                "custom": {
@@ -373,7 +373,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the total monthly cost across the cluster over time.",
+         "description": "Monthly cost projection trend for the selected namespace. This helps application teams track their projected monthly spending and ensure they remain within their allocated budget throughout the billing period.",
          "fieldConfig": {
             "defaults": {
                "custom": {
@@ -426,7 +426,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the cost by resource across the cluster.",
+         "description": "Monthly cost distribution for the selected namespace across resource types (CPU, RAM, Persistent Volumes). This shows which resource category is the primary cost driver for this namespace, helping teams prioritize their optimization efforts.",
          "fieldConfig": {
             "defaults": {
                "unit": "currencyUSD"
@@ -507,6 +507,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
+         "description": "Top 10 pods by projected monthly cost (based on current hourly rates) with cost difference percentages compared to 7 days and 30 days ago. Color-coded cells highlight cost increases (red) and decreases (green). Use this to identify the most expensive pods in the namespace and track how pod costs change over time, especially after deployments or configuration changes.",
          "fieldConfig": {
             "defaults": {
                "thresholds": {
@@ -645,7 +646,7 @@
                      "pod": 0
                   },
                   "renameByName": {
-                     "Value #A": "Total Cost (Today)",
+                     "Value #A": "Monthly Cost",
                      "Value #B": "Cost Difference (7d)",
                      "Value #C": "Cost Difference (30d)",
                      "pod": "Pod"
@@ -660,7 +661,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the cost by pod across the cluster.",
+         "description": "Top 10 pods by monthly cost showing the distribution of spending across pods in the namespace. This visualization helps identify which pods consume the most resources and whether costs are evenly distributed or concentrated in a few workloads.",
          "fieldConfig": {
             "defaults": {
                "unit": "currencyUSD"
@@ -723,6 +724,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
+         "description": "Top 10 containers by current monthly cost with cost difference percentages compared to 7 days and 30 days ago. Color-coded cells highlight cost increases (red) and decreases (green). This granular view helps identify specific containers within pods that are driving costs, useful for optimizing multi-container pod configurations.",
          "fieldConfig": {
             "defaults": {
                "thresholds": {
@@ -808,7 +810,7 @@
             "sortBy": [
                {
                   "desc": true,
-                  "displayName": "Total Cost (Today)"
+                  "displayName": "Monthly Cost"
                }
             ]
          },
@@ -861,7 +863,7 @@
                      "container": 0
                   },
                   "renameByName": {
-                     "Value #A": "Total Cost (Today)",
+                     "Value #A": "Monthly Cost",
                      "Value #B": "Cost Difference (7d)",
                      "Value #C": "Cost Difference (30d)",
                      "container": "Container"
@@ -876,7 +878,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the cost by container across the cluster.",
+         "description": "Top 10 containers by monthly cost showing the distribution of spending across containers in the namespace. This helps identify which container images or workload types are most expensive and whether sidecar containers are adding significant costs.",
          "fieldConfig": {
             "defaults": {
                "unit": "currencyUSD"
@@ -939,6 +941,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
+         "description": "List of Persistent Volumes used by the selected namespace with their capacity (in GiB) and monthly cost, sorted by total cost. Use this to identify large or expensive volumes that may be candidates for cleanup, resizing, or migration to cheaper storage classes.",
          "fieldConfig": {
             "defaults": {
                "thresholds": {
@@ -975,7 +978,7 @@
             "sortBy": [
                {
                   "desc": true,
-                  "displayName": "Total Cost"
+                  "displayName": "Monthly Cost"
                }
             ]
          },
@@ -1033,7 +1036,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Shows the cost by persistent volume across the cluster.",
+         "description": "Distribution of monthly storage costs across Persistent Volumes in the namespace. This shows which volumes consume the most storage budget and helps identify if storage costs are concentrated in a few large volumes or distributed across many smaller ones.",
          "fieldConfig": {
             "defaults": {
                "unit": "currencyUSD"
