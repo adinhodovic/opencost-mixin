@@ -49,15 +49,16 @@ local query = variable.query;
       },
 
     cluster:
-      query.new(
-        config.clusterLabel,
-        'label_values(opencost_build_info{}, cluster)',
-      ) +
+      query.new('cluster') +
       query.withDatasourceFromVariable(this.datasource) +
-      query.withSort() +
+      query.queryTypes.withLabelValues(
+        config.clusterLabel,
+        'opencost_build_info{}',
+      ) +
       query.generalOptions.withLabel('Cluster') +
       query.refresh.onLoad() +
       query.refresh.onTime() +
+      query.withSort() +
       (
         if config.showMultiCluster
         then query.generalOptions.showOnDashboard.withLabelAndValue()
