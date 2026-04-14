@@ -24,10 +24,12 @@ local annotation = g.dashboard.annotation;
     dashboardIds: {
       'opencost-overview': 'opencost-mixin-kover-jkwq',
       'opencost-namespace': 'opencost-mixin-namespace-jkwq',
+      'opencost-workload': 'opencost-mixin-workload-jkwq',
     },
     dashboardUrls: {
       'opencost-overview': '%s/d/%s/opencost-overview' % [this.grafanaUrl, this.dashboardIds['opencost-overview']],
       'opencost-namespace': '%s/d/%s/opencost-namespace' % [this.grafanaUrl, this.dashboardIds['opencost-namespace']],
+      'opencost-workload': '%s/d/%s/opencost-workload' % [this.grafanaUrl, this.dashboardIds['opencost-workload']],
     },
 
     alerts: {
