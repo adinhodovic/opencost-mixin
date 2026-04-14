@@ -28,12 +28,12 @@ local tbQueryOptions = tablePanel.queryOptions;
         defaultVariables.cluster,
         defaultVariables.job,
         defaultVariables.namespace,
-        defaultVariables.type,
+        defaultVariables.workloadType,
         defaultVariables.workload,
       ];
 
       local defaultFilters = util.filters($._config);
-      local workloadFilters = '%(clusterLabel)s="$cluster", namespace="$namespace", workload_type=~"$type", workload=~"$workload"' % $._config;
+      local workloadFilters = defaultFilters.withNamespaceWorkload;
 
       local queries = {
         hourlyRamCostByWorkload: |||
@@ -170,15 +170,10 @@ local tbQueryOptions = tablePanel.queryOptions;
             )
             * on(%(clusterLabel)s, namespace, pod) group_left(workload_type, workload)
             max by (%(clusterLabel)s, namespace, pod, workload_type, workload) (
-              namespace_workload_pod:kube_pod_owner:relabel{
-                %(clusterLabel)s="$cluster",
-                namespace="$namespace",
-                workload_type=~"$type",
-                workload=~"$workload"
-              }
-            )
+                namespace_workload_pod:kube_pod_owner:relabel{%(workloadFilters)s}
+              )
           ) by (pod)
-        ||| % $._config,
+        ||| % ($._config { workloadFilters: workloadFilters }),
 
       };
 
