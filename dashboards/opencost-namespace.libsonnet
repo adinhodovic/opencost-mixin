@@ -83,7 +83,7 @@ local tbOverride = tbStandardOptions.override;
                 %(default)s
               }
             ) by (persistentvolume)
-            * on(persistentvolume) group_left(cluster, namespace) (
+            * on(persistentvolume) group_left(cluster, namespace, persistentvolumeclaim) (
               label_replace(
                 kube_persistentvolumeclaim_info{
                   %(withNamespace)s
@@ -109,7 +109,7 @@ local tbOverride = tbStandardOptions.override;
                 %(default)s
               }
             ) by (persistentvolume)
-            * on(persistentvolume) group_left(cluster, namespace) (
+            * on(persistentvolume) group_left(cluster, namespace, persistentvolumeclaim) (
               label_replace(
                 kube_persistentvolumeclaim_info{
                   %(withNamespace)s
@@ -121,14 +121,34 @@ local tbOverride = tbStandardOptions.override;
           ) * 730
         ||| % defaultFilters,
 
+        monthlyGPUCost: |||
+          sum(
+            sum(
+              container_gpu_allocation{
+                %(withNamespace)s
+              }
+            )
+            by (namespace, instance)
+            * on(instance) group_left()
+            (
+              avg(
+                node_gpu_hourly_cost{
+                  %(default)s
+                }
+              ) by (instance) * 730
+            )
+          )
+        ||| % defaultFilters,
+
         monthlyCost: |||
           %s
           +
           %s
           +
           %s
-        ||| % [queries.monthlyRamCost, queries.monthlyCpuCost, queries.monthlyPVNoNilCost],
-        dailyCost: std.strReplace(queries.monthlyCost, ') * 730', ') * 24'),
+          +
+          %s
+        ||| % [queries.monthlyRamCost, queries.monthlyCpuCost, queries.monthlyGPUCost, queries.monthlyPVNoNilCost],
         hourlyCost: std.strReplace(queries.monthlyCost, ') * 730', ') * 1'),
 
         // Keep job label formatting inconsistent due to strReplace
@@ -261,7 +281,7 @@ local tbOverride = tbStandardOptions.override;
           queries.containerMonthlyCostOffset30d,
         ],
 
-        pvTotalGibByPvQuery: |||
+        pvcTotalGibByClaimQuery: |||
           sum(
             sum(
               kube_persistentvolume_capacity_bytes{
@@ -269,7 +289,7 @@ local tbOverride = tbStandardOptions.override;
                 job="$job"
               } / (1024 * 1024 * 1024)
             ) by (persistentvolume)
-            * on(persistentvolume) group_left(cluster, namespace)
+            * on(persistentvolume) group_left(cluster, namespace, persistentvolumeclaim)
               label_replace(
                 kube_persistentvolumeclaim_info{
                   cluster="$cluster",
@@ -279,9 +299,10 @@ local tbOverride = tbStandardOptions.override;
                 "persistentvolume", "$1",
                 "volumename", "(.*)"
               )
-          ) by (persistentvolume)
+          ) by (persistentvolumeclaim)
         ||| % defaultFilters,
         pvMonthlyCostByPv: std.strReplace(queries.monthlyPVCost, '* 730', 'by (persistentvolume) * 730'),
+        pvcMonthlyCostByClaim: std.strReplace(queries.monthlyPVCost, '* 730', 'by (persistentvolumeclaim) * 730'),
       };
 
       local panels = {
@@ -297,18 +318,6 @@ local tbOverride = tbStandardOptions.override;
             description='Current hourly cost rate for the selected namespace, including CPU, RAM, and PV costs. This provides real-time visibility into namespace spending and helps track the immediate impact of workload changes on costs.',
           ),
 
-        dailyCostStat:
-          dashboards.statPanel(
-            'Daily Cost',
-            'currencyUSD',
-            queries.dailyCost,
-            graphMode='none',
-            decimals=2,
-            showPercentChange=true,
-            percentChangeColorMode='inverted',
-            description='Total daily cost for the selected namespace. The percentage change indicates cost variance compared to the previous period, helping application teams monitor their daily spending and detect unexpected cost increases.',
-          ),
-
         monthlyCostStat:
           dashboards.statPanel(
             'Monthly Cost',
@@ -318,7 +327,7 @@ local tbOverride = tbStandardOptions.override;
             decimals=2,
             showPercentChange=true,
             percentChangeColorMode='inverted',
-            description='Projected monthly cost for the selected namespace based on current hourly rates. Application teams can use this to track their budget allocation and ensure they stay within their cost targets.',
+            description='Projected monthly cost for the selected namespace based on current hourly rates. This includes CPU, RAM, GPU, and PV costs so application teams can track their overall spend against budget.',
           ),
 
         monthlyRamCostStat:
@@ -357,18 +366,30 @@ local tbOverride = tbStandardOptions.override;
             description='Projected monthly Persistent Volume cost for the selected namespace. Monitor this to identify unused PVCs or opportunities to migrate to cheaper storage classes without impacting application performance.',
           ),
 
-        dailyCostTimeSeries:
+        monthlyGPUCostStat:
+          dashboards.statPanel(
+            'Monthly GPU Cost',
+            'currencyUSD',
+            queries.monthlyGPUCost,
+            graphMode='none',
+            decimals=2,
+            showPercentChange=true,
+            percentChangeColorMode='inverted',
+            description='Projected monthly GPU cost for the selected namespace. This helps teams understand accelerator spend and spot namespaces where GPU-backed workloads dominate overall costs.',
+          ),
+
+        hourlyCostTimeSeries:
           dashboards.timeSeriesPanel(
-            'Daily Cost',
+            'Hourly Cost',
             'currencyUSD',
             [
               {
-                expr: queries.dailyCost,
-                legend: 'Daily Cost',
-                interval: '1h',
+                expr: queries.hourlyCost,
+                legend: 'Hourly Cost',
+                interval: $._config.dashboardMinInterval,
               },
             ],
-            description='Daily cost trend for the selected namespace over time. Use this to track how namespace costs evolve, identify cost spikes related to deployments or scaling events, and validate that cost optimization efforts are effective.',
+            description='Hourly cost trend for the selected namespace. Use this to see short-term cost changes from scaling, deployments, or workload churn without switching to the cluster overview.',
           ),
 
         monthlyCostTimeSeries:
@@ -379,7 +400,7 @@ local tbOverride = tbStandardOptions.override;
               {
                 expr: queries.monthlyCost,
                 legend: 'Monthly Cost',
-                interval: '1h',
+                interval: $._config.dashboardMinInterval,
               },
             ],
             description='Monthly cost projection trend for the selected namespace. This helps application teams track their projected monthly spending and ensure they remain within their allocated budget throughout the billing period.',
@@ -402,8 +423,12 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.monthlyPVCost,
                 legend: 'PV',
               },
+              {
+                expr: queries.monthlyGPUCost,
+                legend: 'GPU',
+              },
             ],
-            description='Monthly cost distribution for the selected namespace across resource types (CPU, RAM, Persistent Volumes). This shows which resource category is the primary cost driver for this namespace, helping teams prioritize their optimization efforts.',
+            description='Monthly cost distribution for the selected namespace across resource types (CPU, RAM, Persistent Volumes, and GPU). This shows which resource category is the primary cost driver for this namespace, helping teams prioritize their optimization efforts.',
             values=['percent', 'value']
           ),
 
@@ -589,17 +614,17 @@ local tbOverride = tbStandardOptions.override;
 
         pvTable:
           dashboards.tablePanel(
-            'Persistent Volumes Monthly Cost',
+            'Persistent Volume Claims Monthly Cost',
             'decgbytes',
             [
               {
-                expr: queries.pvTotalGibByPvQuery,
+                expr: queries.pvcTotalGibByClaimQuery,
               },
               {
-                expr: queries.pvMonthlyCostByPv,
+                expr: queries.pvcMonthlyCostByClaim,
               },
             ],
-            description='List of Persistent Volumes used by the selected namespace with their capacity (in GiB) and monthly cost, sorted by total cost. Use this to identify large or expensive volumes that may be candidates for cleanup, resizing, or migration to cheaper storage classes.',
+            description='List of Persistent Volume Claims used by the selected namespace with their capacity (in GiB) and monthly cost, sorted by total cost. Use this to identify large or expensive claims that may be candidates for cleanup, resizing, or migration to cheaper storage classes.',
             sortBy={
               name: 'Monthly Cost',
               desc: true,
@@ -614,12 +639,12 @@ local tbOverride = tbStandardOptions.override;
               tbQueryOptions.transformation.withOptions(
                 {
                   renameByName: {
-                    persistentvolume: 'Persistent Volume',
+                    persistentvolumeclaim: 'Persistent Volume Claim',
                     'Value #A': 'Total GiB',
                     'Value #B': 'Total Cost',
                   },
                   indexByName: {
-                    persistentvolume: 0,
+                    persistentvolumeclaim: 0,
                     'Value #A': 1,
                     'Value #B': 2,
                   },
@@ -641,16 +666,16 @@ local tbOverride = tbStandardOptions.override;
 
         pvCostPieChart:
           dashboards.pieChartPanel(
-            'Cost by Persistent Volume',
+            'Cost by Persistent Volume Claim',
             'currencyUSD',
             [
               {
-                expr: queries.pvMonthlyCostByPv,
-                legend: '{{ persistentvolume }}',
+                expr: queries.pvcMonthlyCostByClaim,
+                legend: '{{ persistentvolumeclaim }}',
               },
             ],
             values=['percent', 'value'],
-            description='Distribution of monthly storage costs across Persistent Volumes in the namespace. This shows which volumes consume the most storage budget and helps identify if storage costs are concentrated in a few large volumes or distributed across many smaller ones.',
+            description='Distribution of monthly storage costs across Persistent Volume Claims in the namespace. This shows which claims consume the most storage budget and helps identify whether storage costs are concentrated in a few large claims or distributed across many smaller ones.',
           ),
       };
 
@@ -667,10 +692,10 @@ local tbOverride = tbStandardOptions.override;
         grid.wrapPanels(
           [
             panels.hourlyCostStat,
-            panels.dailyCostStat,
             panels.monthlyCostStat,
             panels.monthlyCpuCostStat,
             panels.monthlyRamCostStat,
+            panels.monthlyGPUCostStat,
             panels.monthlyPVCostStat,
           ],
           panelWidth=4,
@@ -679,77 +704,72 @@ local tbOverride = tbStandardOptions.override;
         ) +
         grid.wrapPanels(
           [
-            panels.dailyCostTimeSeries,
+            panels.hourlyCostTimeSeries,
             panels.monthlyCostTimeSeries,
-            panels.resourceCostPieChart,
           ],
-          panelWidth=8,
+          panelWidth=12,
           panelHeight=5,
           startY=4
+        ) +
+        grid.wrapPanels(
+          [
+            panels.resourceCostPieChart,
+            panels.podCostPieChart,
+            panels.containerCostPieChart,
+            panels.pvCostPieChart,
+          ],
+          panelWidth=12,
+          panelHeight=7,
+          startY=9
         ) +
         [
           row.new(
             'Pod Summary',
           ) +
           row.gridPos.withX(0) +
-          row.gridPos.withY(9) +
+          row.gridPos.withY(23) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.podTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(10) +
-          tablePanel.gridPos.withW(18) +
+          tablePanel.gridPos.withY(24) +
+          tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
-          panels.podCostPieChart +
-          row.gridPos.withX(18) +
-          row.gridPos.withY(10) +
-          row.gridPos.withW(6) +
-          row.gridPos.withH(10),
         ] +
         [
           row.new(
             'Container Summary',
           ) +
           row.gridPos.withX(0) +
-          row.gridPos.withY(20) +
+          row.gridPos.withY(34) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.containerTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(21) +
-          tablePanel.gridPos.withW(18) +
+          tablePanel.gridPos.withY(35) +
+          tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
-          panels.containerCostPieChart +
-          row.gridPos.withX(18) +
-          row.gridPos.withY(21) +
-          row.gridPos.withW(6) +
-          row.gridPos.withH(10),
         ] +
         [
           row.new(
             'PV Summary',
           ) +
           row.gridPos.withX(0) +
-          row.gridPos.withY(31) +
+          row.gridPos.withY(45) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.pvTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(32) +
-          tablePanel.gridPos.withW(18) +
+          tablePanel.gridPos.withY(46) +
+          tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
-          panels.pvCostPieChart +
-          row.gridPos.withX(18) +
-          row.gridPos.withY(32) +
-          row.gridPos.withW(6) +
-          row.gridPos.withH(10),
         ];
 
       mixinUtils.dashboards.bypassDashboardValidation +
       dashboard.new(
         'OpenCost / Namespace',
       ) +
-      dashboard.withDescription('A detailed namespace-level cost analysis dashboard that breaks down infrastructure spending by pods, containers, and persistent volumes within a selected namespace. Use this dashboard to understand which workloads are driving costs within a namespace, track cost trends over time, and identify optimization opportunities at the pod and container level. This dashboard is ideal for application teams monitoring their own resource consumption and costs. %s' % mixinUtils.dashboards.dashboardDescriptionLink('opencost-mixin', 'https://github.com/adinhodovic/opencost-mixin')) +
+      dashboard.withDescription('A detailed namespace-level cost analysis dashboard that breaks down infrastructure spending by pods, containers, persistent volumes, and GPU usage within a selected namespace. Use this dashboard to understand which workloads are driving costs within a namespace, track monthly cost trends over time, and identify optimization opportunities at the pod and container level. This dashboard is ideal for application teams monitoring their own resource consumption and costs. %s' % mixinUtils.dashboards.dashboardDescriptionLink('opencost-mixin', 'https://github.com/adinhodovic/opencost-mixin')) +
       dashboard.withUid($._config.dashboardIds[dashboardName]) +
       dashboard.withTags($._config.tags) +
       dashboard.withTimezone('utc') +
@@ -758,7 +778,7 @@ local tbOverride = tbStandardOptions.override;
       dashboard.time.withTo('now') +
       dashboard.withVariables(variables) +
       dashboard.withLinks(
-        mixinUtils.dashboards.dashboardLinks('OpenCost', $._config)
+        mixinUtils.dashboards.dashboardLinks('OpenCost', $._config, dropdown=true)
       ) +
       dashboard.withPanels(
         rows

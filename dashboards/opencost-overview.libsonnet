@@ -32,12 +32,12 @@ local tbOverride = tbStandardOptions.override;
 
       local defaultFilters = util.filters($._config);
       local queries = {
-        dailyCost: |||
+        hourlyCost: |||
           sum(
             node_total_hourly_cost{
               %(default)s
             }
-          ) * 24
+          )
           +
           sum(
             sum(
@@ -51,10 +51,9 @@ local tbOverride = tbStandardOptions.override;
                 %(default)s
               }
             ) by (persistentvolume)
-          ) * 24
+          )
         ||| % defaultFilters,
-        hourlyCost: std.strReplace(queries.dailyCost, '* 24', ''),
-        monthlyCost: std.strReplace(queries.dailyCost, '* 24', '* 730'),
+        monthlyCost: '(%s) * 730' % queries.hourlyCost,
 
         monthlyRamCost: |||
           sum(
@@ -108,6 +107,14 @@ local tbOverride = tbStandardOptions.override;
                   %(default)s
                 }
               ) by (persistentvolume)
+          ) * 730
+        ||| % defaultFilters,
+
+        monthlyGPUCost: |||
+          sum(
+            node_gpu_hourly_cost{
+              %(default)s
+            }
           ) * 730
         ||| % defaultFilters,
 
@@ -345,18 +352,6 @@ local tbOverride = tbStandardOptions.override;
       };
 
       local panels = {
-        dailyCostStat:
-          dashboards.statPanel(
-            'Daily Cost',
-            'currencyUSD',
-            queries.dailyCost,
-            graphMode='none',
-            decimals=2,
-            showPercentChange=true,
-            percentChangeColorMode='inverted',
-            description='Total daily infrastructure cost across the cluster, including compute (CPU, RAM) and storage (PV) costs. The percentage change indicates cost variance compared to the previous period, helping identify sudden cost increases or decreases.',
-          ),
-
         hourlyCostStat:
           dashboards.statPanel(
             'Hourly Cost',
@@ -417,6 +412,18 @@ local tbOverride = tbStandardOptions.override;
             description='Projected monthly cost for Persistent Volume (storage) resources across the cluster. Monitor this metric to identify unused or oversized volumes that can be optimized to reduce storage costs.',
           ),
 
+        monthlyGPUCostStat:
+          dashboards.statPanel(
+            'Monthly GPU Cost',
+            'currencyUSD',
+            queries.monthlyGPUCost,
+            graphMode='none',
+            decimals=2,
+            showPercentChange=true,
+            percentChangeColorMode='inverted',
+            description='Projected monthly GPU cost across the cluster. Use this to understand whether accelerator usage is a major cost driver and to spot opportunities to right-size GPU-backed workloads.',
+          ),
+
         hourCostTimeSeries:
           dashboards.timeSeriesPanel(
             'Hourly Cost',
@@ -424,20 +431,6 @@ local tbOverride = tbStandardOptions.override;
             queries.hourlyCost,
             'Hourly Cost',
             description='Hourly cost trend over time showing how infrastructure spending fluctuates throughout the day. Use this to identify cost spikes, correlate costs with workload patterns, and detect autoscaling behavior impact on spending.',
-          ),
-
-        dailyCostTimeSeries:
-          dashboards.timeSeriesPanel(
-            'Daily Cost',
-            'currencyUSD',
-            [
-              {
-                expr: queries.dailyCost,
-                legend: 'Daily Cost',
-                interval: '1h',
-              },
-            ],
-            description='Daily cost trend showing infrastructure spending patterns over multiple days. This view helps identify day-over-day cost changes, weekly patterns, and the impact of infrastructure changes on overall spending.',
           ),
 
         monthlyCostTimeSeries:
@@ -448,7 +441,7 @@ local tbOverride = tbStandardOptions.override;
               {
                 expr: queries.monthlyCost,
                 legend: 'Monthly Cost',
-                interval: '1h',
+                interval: $._config.dashboardMinInterval,
               },
             ],
             description='Monthly cost projection trend over time. This visualization helps track how your projected monthly spending evolves and whether you are staying within budget throughout the billing period.',
@@ -462,12 +455,12 @@ local tbOverride = tbStandardOptions.override;
               {
                 expr: queries.totalCostVariance7d,
                 legend: 'Current hourly cost vs. 7-day average',
-                interval: '1h',
+                interval: $._config.dashboardMinInterval,
               },
               {
                 expr: queries.totalCostVariance30d,
                 legend: 'Current hourly cost vs. 30-day average',
-                interval: '1h',
+                interval: $._config.dashboardMinInterval,
               },
             ],
             description='Cost variance comparing current hourly costs against 7-day and 30-day historical averages. Positive values indicate costs are higher than average, negative values indicate lower costs. Use this to detect cost anomalies and unusual spending patterns that may require investigation.',
@@ -481,17 +474,17 @@ local tbOverride = tbStandardOptions.override;
               {
                 expr: queries.cpuCostVariance30d,
                 legend: 'CPU Cost vs. 30-day average',
-                interval: '1h',
+                interval: $._config.dashboardMinInterval,
               },
               {
                 expr: queries.ramCostVariance30d,
                 legend: 'RAM Cost vs. 30-day average',
-                interval: '1h',
+                interval: $._config.dashboardMinInterval,
               },
               {
                 expr: queries.pvCostVariance30d,
                 legend: 'PV Cost vs. 30-day average',
-                interval: '1h',
+                interval: $._config.dashboardMinInterval,
               },
             ],
             description='Resource-specific cost variance comparing current CPU, RAM, and PV costs against their 30-day historical averages. This breakdown helps identify which resource type is driving cost changes - useful for pinpointing whether cost increases are due to compute scaling, memory usage, or storage growth.',
@@ -514,8 +507,12 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.monthlyPVCost,
                 legend: 'PV',
               },
+              {
+                expr: queries.monthlyGPUCost,
+                legend: 'GPU',
+              },
             ],
-            description='Monthly cost distribution across resource types (CPU, RAM, Persistent Volumes). This breakdown shows which resource category consumes the most budget, helping prioritize optimization efforts. For example, if PV costs dominate, focus on storage optimization.',
+            description='Monthly cost distribution across resource types (CPU, RAM, Persistent Volumes, and GPU). This breakdown shows which resource category consumes the most budget, helping prioritize optimization efforts.',
             values=['percent', 'value']
           ),
 
@@ -743,10 +740,10 @@ local tbOverride = tbStandardOptions.override;
         grid.wrapPanels(
           [
             panels.hourlyCostStat,
-            panels.dailyCostStat,
             panels.monthlyCostStat,
             panels.monthlyCpuCostStat,
             panels.monthlyRamCostStat,
+            panels.monthlyGPUCostStat,
             panels.monthlyPVCostStat,
           ],
           panelWidth=4,
@@ -755,9 +752,9 @@ local tbOverride = tbStandardOptions.override;
         ) +
         grid.wrapPanels(
           [
-            panels.hourCostTimeSeries,
-            panels.dailyCostTimeSeries,
-            panels.monthlyCostTimeSeries,
+            panels.resourceCostPieChartPanel,
+            panels.namespaceCostPieChartPanel,
+            panels.instanceTypeCostPieChartPanel,
           ],
           panelWidth=8,
           panelHeight=5,
@@ -765,11 +762,10 @@ local tbOverride = tbStandardOptions.override;
         ) +
         grid.wrapPanels(
           [
-            panels.resourceCostPieChartPanel,
-            panels.namespaceCostPieChartPanel,
-            panels.instanceTypeCostPieChartPanel,
+            panels.hourCostTimeSeries,
+            panels.monthlyCostTimeSeries,
           ],
-          panelWidth=8,
+          panelWidth=12,
           panelHeight=5,
           startY=10
         ) +
@@ -816,7 +812,7 @@ local tbOverride = tbStandardOptions.override;
       dashboard.new(
         'OpenCost / Overview',
       ) +
-      dashboard.withDescription('A comprehensive overview dashboard for OpenCost that displays cluster-wide cost metrics including hourly, daily, and monthly costs broken down by resource type (CPU, RAM, PV), instance type, namespace, and individual nodes. Use this dashboard to monitor overall infrastructure spending, identify cost trends, and detect cost anomalies across your Kubernetes cluster. %s' % mixinUtils.dashboards.dashboardDescriptionLink('opencost-mixin', 'https://github.com/adinhodovic/opencost-mixin')) +
+      dashboard.withDescription('A comprehensive overview dashboard for OpenCost that displays cluster-wide cost metrics including hourly and monthly costs broken down by resource type (CPU, RAM, PV, GPU), instance type, namespace, and individual nodes. Use this dashboard to monitor overall infrastructure spending, identify cost trends, and detect cost anomalies across your Kubernetes cluster. %s' % mixinUtils.dashboards.dashboardDescriptionLink('opencost-mixin', 'https://github.com/adinhodovic/opencost-mixin')) +
       dashboard.withUid($._config.dashboardIds[dashboardName]) +
       dashboard.withTags($._config.tags) +
       dashboard.withTimezone('utc') +
@@ -825,7 +821,7 @@ local tbOverride = tbStandardOptions.override;
       dashboard.time.withTo('now') +
       dashboard.withVariables(variables) +
       dashboard.withLinks(
-        mixinUtils.dashboards.dashboardLinks('OpenCost', $._config)
+        mixinUtils.dashboards.dashboardLinks('OpenCost', $._config, dropdown=true)
       ) +
       dashboard.withPanels(
         rows

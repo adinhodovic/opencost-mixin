@@ -16,6 +16,9 @@ local annotation = g.dashboard.annotation;
     // Default datasource name
     datasourceName: 'default',
 
+    // Minimum interval for dashboard graphs. This is used to prevent Grafana from automatically adjusting the interval to a value that is too small, which can cause performance issues.
+    dashboardMinInterval: '30m',
+
     // Opt-in to multiCluster dashboards by overriding this and the clusterLabel.
     showMultiCluster: false,
     clusterLabel: 'cluster',
