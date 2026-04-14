@@ -4,7 +4,7 @@
    "annotations": {
       "list": [ ]
    },
-   "description": "A workload-focused OpenCost dashboard that breaks down cost inside a namespace using workload ownership labels. It mirrors the existing mixin style while adding workload_type and workload selectors so teams can inspect workload-level monthly, daily, and hourly cost drivers across RAM, CPU, persistent volume, and GPU usage. This dashboard depends on the workload recording rules shipped with the mixin on GitHub. Time-based workload cost views are smoothed with 1-hour averages sampled every 5 minutes (`[1h:5m]`). The dashboards were generated using opencost-mixin. https://github.com/adinhodovic/opencost-mixin. Open issues and create feature requests in the repository.",
+   "description": "A workload-focused OpenCost dashboard that breaks down cost inside a namespace using workload ownership labels. It mirrors the existing mixin style while adding workload_type and workload selectors so teams can inspect workload-level monthly, daily, and hourly cost drivers across RAM, CPU, persistent volume, and GPU usage. This dashboard depends on the workload recording rules shipped with the mixin on GitHub. Time-based workload cost views are smoothed with 1-hour averages sampled every 5 minutes (`[1h:5m]`). The dashboards were generated using [opencost-mixin](https://github.com/adinhodovic/opencost-mixin). Open issues and create feature requests in the repository.",
    "editable": false,
    "links": [
       {
@@ -52,7 +52,8 @@
                   ]
                },
                "unit": "currencyUSD"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 3,
@@ -71,7 +72,7 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
                "expr": "sum((\n  sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_ram_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n\n  +\n  sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_cpu_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n\n)\n+\n(\n  sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_pvc_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n\n  or (sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_ram_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n * 0)\n)\n+\n(\n  sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_gpu_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n\n  or (sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_ram_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n * 0)\n)\n) or vector(0)",
                "instant": false
@@ -99,7 +100,8 @@
                   ]
                },
                "unit": "currencyUSD"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 3,
@@ -118,7 +120,7 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
                "expr": "sum(((\n  sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_ram_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n\n  +\n  sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_cpu_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n\n)\n+\n(\n  sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_pvc_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n\n  or (sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_ram_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n * 0)\n)\n+\n(\n  sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_gpu_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n\n  or (sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_ram_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n * 0)\n)\n) * 730) or vector(0)",
                "instant": false
@@ -146,7 +148,8 @@
                   ]
                },
                "unit": "currencyUSD"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 3,
@@ -165,7 +168,7 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
                "expr": "sum((sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_cpu_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n) * 730) or vector(0)",
                "instant": false
@@ -193,7 +196,8 @@
                   ]
                },
                "unit": "currencyUSD"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 3,
@@ -212,7 +216,7 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
                "expr": "sum((sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_ram_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n) * 730) or vector(0)",
                "instant": false
@@ -240,7 +244,8 @@
                   ]
                },
                "unit": "currencyUSD"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 3,
@@ -259,7 +264,7 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
                "expr": "sum((sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_gpu_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n) * 730) or vector(0)",
                "instant": false
@@ -287,7 +292,8 @@
                   ]
                },
                "unit": "currencyUSD"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 3,
@@ -306,7 +312,7 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
                "expr": "sum((sum by (cluster, namespace, workload_type, workload) (\n  avg_over_time(workload:opencost_pvc_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}[1h:5m])\n)\n) * 730) or vector(0)",
                "instant": false
@@ -324,7 +330,8 @@
          "fieldConfig": {
             "defaults": {
                "unit": "currencyUSD"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 5,
@@ -375,7 +382,8 @@
          "fieldConfig": {
             "defaults": {
                "unit": "currencyUSD"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 5,
@@ -426,7 +434,8 @@
          "fieldConfig": {
             "defaults": {
                "unit": "currencyUSD"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 5,
@@ -512,7 +521,8 @@
                   }
                },
                "unit": "currencyUSD"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -571,7 +581,8 @@
                   }
                },
                "unit": "currencyUSD"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -663,6 +674,7 @@
          "description": "Monthly cost breakdown by workload, where each row is a `workload_type / workload` pair. The table shows RAM, CPU, persistent volume, GPU, and total projected monthly cost so you can compare the main cost drivers for each workload.",
          "fieldConfig": {
             "defaults": {
+               "links": [ ],
                "thresholds": {
                   "steps": [ ]
                },
@@ -792,6 +804,7 @@
          "description": "Projected monthly storage cost by persistent volume claim for the selected workload scope.",
          "fieldConfig": {
             "defaults": {
+               "links": [ ],
                "thresholds": {
                   "steps": [ ]
                },
