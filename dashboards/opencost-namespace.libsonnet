@@ -365,6 +365,7 @@ local tbOverride = tbStandardOptions.override;
               {
                 expr: queries.dailyCost,
                 legend: 'Daily Cost',
+                interval: '1h',
               },
             ],
             description='Daily cost trend for the selected namespace over time. Use this to track how namespace costs evolve, identify cost spikes related to deployments or scaling events, and validate that cost optimization efforts are effective.',
@@ -378,6 +379,7 @@ local tbOverride = tbStandardOptions.override;
               {
                 expr: queries.monthlyCost,
                 legend: 'Monthly Cost',
+                interval: '1h',
               },
             ],
             description='Monthly cost projection trend for the selected namespace. This helps application teams track their projected monthly spending and ensure they remain within their allocated budget throughout the billing period.',

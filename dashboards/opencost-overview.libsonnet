@@ -430,8 +430,13 @@ local tbOverride = tbStandardOptions.override;
           dashboards.timeSeriesPanel(
             'Daily Cost',
             'currencyUSD',
-            queries.dailyCost,
-            'Daily Cost',
+            [
+              {
+                expr: queries.dailyCost,
+                legend: 'Daily Cost',
+                interval: '1h',
+              },
+            ],
             description='Daily cost trend showing infrastructure spending patterns over multiple days. This view helps identify day-over-day cost changes, weekly patterns, and the impact of infrastructure changes on overall spending.',
           ),
 
@@ -439,8 +444,13 @@ local tbOverride = tbStandardOptions.override;
           dashboards.timeSeriesPanel(
             'Monthly Cost',
             'currencyUSD',
-            queries.monthlyCost,
-            'Monthly Cost',
+            [
+              {
+                expr: queries.monthlyCost,
+                legend: 'Monthly Cost',
+                interval: '1h',
+              },
+            ],
             description='Monthly cost projection trend over time. This visualization helps track how your projected monthly spending evolves and whether you are staying within budget throughout the billing period.',
           ),
 
@@ -452,12 +462,12 @@ local tbOverride = tbStandardOptions.override;
               {
                 expr: queries.totalCostVariance7d,
                 legend: 'Current hourly cost vs. 7-day average',
-                interval: '30m',
+                interval: '1h',
               },
               {
                 expr: queries.totalCostVariance30d,
                 legend: 'Current hourly cost vs. 30-day average',
-                interval: '30m',
+                interval: '1h',
               },
             ],
             description='Cost variance comparing current hourly costs against 7-day and 30-day historical averages. Positive values indicate costs are higher than average, negative values indicate lower costs. Use this to detect cost anomalies and unusual spending patterns that may require investigation.',
@@ -471,17 +481,17 @@ local tbOverride = tbStandardOptions.override;
               {
                 expr: queries.cpuCostVariance30d,
                 legend: 'CPU Cost vs. 30-day average',
-                interval: '30m',
+                interval: '1h',
               },
               {
                 expr: queries.ramCostVariance30d,
                 legend: 'RAM Cost vs. 30-day average',
-                interval: '30m',
+                interval: '1h',
               },
               {
                 expr: queries.pvCostVariance30d,
                 legend: 'PV Cost vs. 30-day average',
-                interval: '30m',
+                interval: '1h',
               },
             ],
             description='Resource-specific cost variance comparing current CPU, RAM, and PV costs against their 30-day historical averages. This breakdown helps identify which resource type is driving cost changes - useful for pinpointing whether cost increases are due to compute scaling, memory usage, or storage growth.',

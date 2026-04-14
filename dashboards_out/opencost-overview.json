@@ -415,6 +415,7 @@
                },
                "exemplar": false,
                "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n) * 24\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) by (persistentvolume)\n) * 24\n",
+               "interval": "1h",
                "legendFormat": "Daily Cost"
             }
          ],
@@ -468,6 +469,7 @@
                },
                "exemplar": false,
                "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n) * 730\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) by (persistentvolume)\n) * 730\n",
+               "interval": "1h",
                "legendFormat": "Monthly Cost"
             }
          ],
@@ -692,7 +694,7 @@
                },
                "exemplar": false,
                "expr": "(\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) [7d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n    node_total_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) [7d:1h]\n)\n",
-               "interval": "30m",
+               "interval": "1h",
                "legendFormat": "Current hourly cost vs. 7-day average"
             },
             {
@@ -702,7 +704,7 @@
                },
                "exemplar": false,
                "expr": "(\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) [30d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n    node_total_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) [30d:1h]\n)\n",
-               "interval": "30m",
+               "interval": "1h",
                "legendFormat": "Current hourly cost vs. 30-day average"
             }
          ],
@@ -756,7 +758,7 @@
                },
                "exemplar": false,
                "expr": "(\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n)\n",
-               "interval": "30m",
+               "interval": "1h",
                "legendFormat": "CPU Cost vs. 30-day average"
             },
             {
@@ -766,7 +768,7 @@
                },
                "exemplar": false,
                "expr": "(\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n)\n",
-               "interval": "30m",
+               "interval": "1h",
                "legendFormat": "RAM Cost vs. 30-day average"
             },
             {
@@ -776,7 +778,7 @@
                },
                "exemplar": false,
                "expr": "(\n  avg_over_time(\n    (sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n) [1d:1h]\n  )\n  -\n  avg_over_time(\n    (sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n) [30d:1h]\n  )\n)\n/\navg_over_time(\n  (sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n) [30d:1h]\n)\n",
-               "interval": "30m",
+               "interval": "1h",
                "legendFormat": "PV Cost vs. 30-day average"
             }
          ],
