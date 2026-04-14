@@ -11,6 +11,7 @@ local annotation = g.dashboard.annotation;
     },
 
     openCostSelector: 'job="opencost"',
+    kubeStateMetricsSelector: 'job="kube-state-metrics"',
 
     // Default datasource name
     datasourceName: 'default',

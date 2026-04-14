@@ -83,13 +83,13 @@ tests:
         values: '3x3'
       - series: 'namespace_workload_pod:kube_pod_owner:relabel{cluster="test-cluster", namespace="test-ns", pod="pod1", workload_type="deployment", workload="web"}'
         values: '1x3'
-      - series: 'kube_pod_spec_volumes_persistentvolumeclaims_info{cluster="test-cluster", namespace="test-ns", pod="pod1", persistentvolumeclaim="pvc1"}'
+      - series: 'kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics", cluster="test-cluster", namespace="test-ns", pod="pod1", persistentvolumeclaim="pvc1"}'
         values: '1x3'
-      - series: 'kube_persistentvolume_capacity_bytes{cluster="test-cluster", persistentvolume="pv1"}'
+      - series: 'kube_persistentvolume_capacity_bytes{job="kube-state-metrics", cluster="test-cluster", persistentvolume="pv1"}'
         values: '10737418240x3'
       - series: 'pv_hourly_cost{cluster="test-cluster", persistentvolume="pv1"}'
         values: '0.2x3'
-      - series: 'kube_persistentvolumeclaim_info{cluster="test-cluster", namespace="test-ns", persistentvolumeclaim="pvc1", volumename="pv1"}'
+      - series: 'kube_persistentvolumeclaim_info{job="kube-state-metrics", cluster="test-cluster", namespace="test-ns", persistentvolumeclaim="pvc1", volumename="pv1"}'
         values: '1x3'
     promql_expr_test:
       - eval_time: 30m

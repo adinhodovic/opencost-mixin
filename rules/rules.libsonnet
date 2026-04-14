@@ -38,19 +38,19 @@
             expr: |||
               sum by (%(clusterLabel)s, namespace, persistentvolumeclaim, workload_type, workload) (
                 max by (%(clusterLabel)s, namespace, persistentvolumeclaim, workload_type, workload) (
-                  max by (%(clusterLabel)s, namespace, pod, persistentvolumeclaim) (kube_pod_spec_volumes_persistentvolumeclaims_info)
+                  max by (%(clusterLabel)s, namespace, pod, persistentvolumeclaim) (kube_pod_spec_volumes_persistentvolumeclaims_info{%(kubeStateMetricsSelector)s})
                   * on(%(clusterLabel)s, namespace, pod) group_left(workload_type, workload)
                   max by (%(clusterLabel)s, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
                 )
                 * on(%(clusterLabel)s, namespace, persistentvolumeclaim) group_left()
                 sum by (%(clusterLabel)s, namespace, persistentvolumeclaim) (
                   (
-                    sum by (%(clusterLabel)s, persistentvolume) (kube_persistentvolume_capacity_bytes / 1024 / 1024 / 1024)
+                    sum by (%(clusterLabel)s, persistentvolume) (kube_persistentvolume_capacity_bytes{%(kubeStateMetricsSelector)s} / 1024 / 1024 / 1024)
                     * sum by (%(clusterLabel)s, persistentvolume) (pv_hourly_cost)
                   )
                   * on(%(clusterLabel)s, persistentvolume) group_left(persistentvolumeclaim, namespace)
                   max by (%(clusterLabel)s, persistentvolume, persistentvolumeclaim, namespace) (
-                    label_replace(kube_persistentvolumeclaim_info, "persistentvolume", "$1", "volumename", "(.*)")
+                    label_replace(kube_persistentvolumeclaim_info{%(kubeStateMetricsSelector)s}, "persistentvolume", "$1", "volumename", "(.*)")
                   )
                 )
               )

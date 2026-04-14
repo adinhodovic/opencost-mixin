@@ -7,9 +7,6 @@ local dashboard = g.dashboard;
 local row = g.panel.row;
 local grid = g.util.grid;
 
-local variable = dashboard.variable;
-local query = variable.query;
-
 local tablePanel = g.panel.table;
 
 // Table
@@ -31,28 +28,8 @@ local tbQueryOptions = tablePanel.queryOptions;
         defaultVariables.cluster,
         defaultVariables.job,
         defaultVariables.namespace,
-        query.new('type') +
-        query.selectionOptions.withIncludeAll() +
-        query.withDatasourceFromVariable(defaultVariables.datasource) +
-        query.queryTypes.withLabelValues(
-          'workload_type',
-          'namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", namespace="$namespace"}' % $._config,
-        ) +
-        query.generalOptions.withLabel('workload_type') +
-        query.refresh.onTime() +
-        query.generalOptions.showOnDashboard.withLabelAndValue() +
-        query.withSort(type='alphabetical'),
-        query.new('workload') +
-        query.selectionOptions.withIncludeAll() +
-        query.withDatasourceFromVariable(defaultVariables.datasource) +
-        query.queryTypes.withLabelValues(
-          'workload',
-          'namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", namespace="$namespace", workload_type=~"$type"}' % $._config,
-        ) +
-        query.generalOptions.withLabel('workload') +
-        query.refresh.onTime() +
-        query.generalOptions.showOnDashboard.withLabelAndValue() +
-        query.withSort(type='alphabetical'),
+        defaultVariables.type,
+        defaultVariables.workload,
       ];
 
       local defaultFilters = util.filters($._config);
@@ -127,6 +104,11 @@ local tbQueryOptions = tablePanel.queryOptions;
 
         dailyCostByWorkload: 'topk(10, (%s) * 24)' % queries.hourlyCostByWorkload,
         monthlyCostByWorkload: '(%s) * 730' % queries.hourlyCostByWorkload,
+        monthlyCostByWorkloadType: |||
+          sum by (workload_type) (
+            (%s) * 730
+          )
+        ||| % queries.hourlyCostByWorkload,
         monthlyRamCostByWorkload: '(%s) * 730' % queries.hourlyRamCostByWorkload,
         monthlyCpuCostByWorkload: '(%s) * 730' % queries.hourlyCpuCostByWorkload,
         monthlyPVCostByWorkload: '(%s) * 730' % queries.hourlyPvcCostByWorkload,
@@ -279,36 +261,41 @@ local tbQueryOptions = tablePanel.queryOptions;
               {
                 expr: 'topk(10, %s)' % queries.monthlyCostByWorkload,
                 legend: '{{ workload_type }} / {{ workload }}',
+                interval: '5m',
               },
             ],
             stack='normal',
             description='Top workloads in the selected namespace by projected monthly cost. Each series represents a `workload_type / workload` pair, which is helpful when the dashboard is scoped to all workloads or all workloads of a given type.',
           ),
 
-        dailyCostByResourceTimeSeries:
+        monthlyCostByResourceTimeSeries:
           dashboards.timeSeriesPanel(
-            'Daily Cost by Resource',
+            'Monthly Cost by Resource',
             'currencyUSD',
             [
               {
-                expr: 'sum((%s) * 24) or vector(0)' % queries.hourlyRamCostByWorkload,
+                expr: 'sum((%s) * 730) or vector(0)' % queries.hourlyRamCostByWorkload,
                 legend: 'RAM',
+                interval: '5m',
               },
               {
-                expr: 'sum((%s) * 24) or vector(0)' % queries.hourlyCpuCostByWorkload,
+                expr: 'sum((%s) * 730) or vector(0)' % queries.hourlyCpuCostByWorkload,
                 legend: 'CPU',
+                interval: '5m',
               },
               {
-                expr: 'sum((%s) * 24) or vector(0)' % queries.hourlyPvcCostByWorkload,
+                expr: 'sum((%s) * 730) or vector(0)' % queries.hourlyPvcCostByWorkload,
                 legend: 'PV',
+                interval: '5m',
               },
               {
-                expr: 'sum((%s) * 24) or vector(0)' % queries.hourlyGpuCostByWorkload,
+                expr: 'sum((%s) * 730) or vector(0)' % queries.hourlyGpuCostByWorkload,
                 legend: 'GPU',
+                interval: '5m',
               },
             ],
             stack='normal',
-            description='Daily cost trend for the selected workload scope split into RAM, CPU, persistent volume, and GPU components. These values are based on the smoothed hourly workload cost rules and then projected to a daily rate.',
+            description='Monthly cost trend for the selected workload scope split into RAM, CPU, persistent volume, and GPU components. These values are based on the smoothed hourly workload cost rules and then projected to a 730-hour month.',
           ),
 
         resourceCostPieChart:
@@ -345,6 +332,16 @@ local tbQueryOptions = tablePanel.queryOptions;
             '{{ workload_type }} / {{ workload }}',
             values=['percent', 'value'],
             description='Top workloads by projected monthly cost in the current namespace and filter scope. Each slice is a `workload_type / workload` pair.',
+          ),
+
+        workloadTypeCostPieChart:
+          dashboards.pieChartPanel(
+            'Cost by Workload Type',
+            'currencyUSD',
+            queries.monthlyCostByWorkloadType,
+            '{{ workload_type }}',
+            values=['percent', 'value'],
+            description='Projected monthly cost grouped by workload type for the current namespace and filter scope.',
           ),
 
         workloadTable:
@@ -434,13 +431,13 @@ local tbQueryOptions = tablePanel.queryOptions;
                     workload_type: 'Workload Type',
                     workload: 'Workload',
                     persistentvolumeclaim: 'Persistent Volume Claim',
-                    'Value #A': 'Total Cost',
+                    Value: 'Total Cost',
                   },
                   indexByName: {
                     workload_type: 0,
                     workload: 1,
                     persistentvolumeclaim: 2,
-                    'Value #A': 3,
+                    Value: 3,
                   },
                   excludeByName: {
                     Time: true,
@@ -475,42 +472,43 @@ local tbQueryOptions = tablePanel.queryOptions;
           startY=1
         ) +
         grid.wrapPanels(
-            [
-              panels.monthlyCostByWorkloadTimeSeries,
-              panels.dailyCostByResourceTimeSeries,
-            ],
-          panelWidth=12,
-          panelHeight=6,
+          [
+            panels.workloadCostPieChart,
+            panels.workloadTypeCostPieChart,
+            panels.resourceCostPieChart,
+          ],
+          panelWidth=8,
+          panelHeight=5,
           startY=4
         ) +
         grid.wrapPanels(
           [
-            panels.resourceCostPieChart,
-            panels.workloadCostPieChart,
+            panels.monthlyCostByWorkloadTimeSeries,
+            panels.monthlyCostByResourceTimeSeries,
           ],
-          panelWidth=12,
-          panelHeight=6,
+          panelWidth=24,
+          panelHeight=8,
           startY=10
         ) +
         [
           row.new('Workload Breakdown') +
           row.gridPos.withX(0) +
-          row.gridPos.withY(16) +
+          row.gridPos.withY(25) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.workloadTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(17) +
+          tablePanel.gridPos.withY(26) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
           row.new('Persistent Volume Claims') +
           row.gridPos.withX(0) +
-          row.gridPos.withY(27) +
+          row.gridPos.withY(36) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.pvcTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(28) +
+          tablePanel.gridPos.withY(37) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(8),
         ];
@@ -519,7 +517,7 @@ local tbQueryOptions = tablePanel.queryOptions;
       dashboard.new(
         'OpenCost / Workload',
       ) +
-      dashboard.withDescription('A workload-focused OpenCost dashboard that breaks down cost inside a namespace using workload ownership labels. It mirrors the existing mixin style while adding workload_type and workload selectors so teams can inspect workload-level monthly, daily, and hourly cost drivers across RAM, CPU, persistent volume, and GPU usage. %s' % mixinUtils.dashboards.dashboardDescriptionLink('opencost-mixin', 'https://github.com/adinhodovic/opencost-mixin')) +
+      dashboard.withDescription('A workload-focused OpenCost dashboard that breaks down cost inside a namespace using workload ownership labels. It mirrors the existing mixin style while adding workload_type and workload selectors so teams can inspect workload-level monthly, daily, and hourly cost drivers across RAM, CPU, persistent volume, and GPU usage. This dashboard depends on the workload recording rules shipped with the mixin on GitHub. Time-based workload cost views are smoothed with 1-hour averages sampled every 5 minutes (`[1h:5m]`). %s' % mixinUtils.dashboards.dashboardDescriptionLink('opencost-mixin', 'https://github.com/adinhodovic/opencost-mixin')) +
       dashboard.withUid($._config.dashboardIds[dashboardName]) +
       dashboard.withTags($._config.tags) +
       dashboard.withTimezone('utc') +

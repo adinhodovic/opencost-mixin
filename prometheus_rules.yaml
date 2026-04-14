@@ -27,19 +27,19 @@
   - "expr": |
       sum by (cluster, namespace, persistentvolumeclaim, workload_type, workload) (
         max by (cluster, namespace, persistentvolumeclaim, workload_type, workload) (
-          max by (cluster, namespace, pod, persistentvolumeclaim) (kube_pod_spec_volumes_persistentvolumeclaims_info)
+          max by (cluster, namespace, pod, persistentvolumeclaim) (kube_pod_spec_volumes_persistentvolumeclaims_info{job="kube-state-metrics"})
           * on(cluster, namespace, pod) group_left(workload_type, workload)
           max by (cluster, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
         )
         * on(cluster, namespace, persistentvolumeclaim) group_left()
         sum by (cluster, namespace, persistentvolumeclaim) (
           (
-            sum by (cluster, persistentvolume) (kube_persistentvolume_capacity_bytes / 1024 / 1024 / 1024)
+            sum by (cluster, persistentvolume) (kube_persistentvolume_capacity_bytes{job="kube-state-metrics"} / 1024 / 1024 / 1024)
             * sum by (cluster, persistentvolume) (pv_hourly_cost)
           )
           * on(cluster, persistentvolume) group_left(persistentvolumeclaim, namespace)
           max by (cluster, persistentvolume, persistentvolumeclaim, namespace) (
-            label_replace(kube_persistentvolumeclaim_info, "persistentvolume", "$1", "volumename", "(.*)")
+            label_replace(kube_persistentvolumeclaim_info{job="kube-state-metrics"}, "persistentvolume", "$1", "volumename", "(.*)")
           )
         )
       )

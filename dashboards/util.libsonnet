@@ -90,5 +90,31 @@ local query = variable.query;
       query.selectionOptions.withIncludeAll(false) +
       query.refresh.onLoad() +
       query.refresh.onTime(),
+
+    type:
+      query.new('type') +
+      query.selectionOptions.withIncludeAll() +
+      query.withDatasourceFromVariable(this.datasource) +
+      query.queryTypes.withLabelValues(
+        'workload_type',
+        'namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", namespace="$namespace"}' % config,
+      ) +
+      query.generalOptions.withLabel('workload_type') +
+      query.refresh.onTime() +
+      query.generalOptions.showOnDashboard.withLabelAndValue() +
+      query.withSort(type='alphabetical'),
+
+    workload:
+      query.new('workload') +
+      query.selectionOptions.withIncludeAll() +
+      query.withDatasourceFromVariable(this.datasource) +
+      query.queryTypes.withLabelValues(
+        'workload',
+        'namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", namespace="$namespace", workload_type=~"$type"}' % config,
+      ) +
+      query.generalOptions.withLabel('workload') +
+      query.refresh.onTime() +
+      query.generalOptions.showOnDashboard.withLabelAndValue() +
+      query.withSort(type='alphabetical'),
   },
 }
