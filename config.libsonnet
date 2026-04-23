@@ -45,6 +45,14 @@ local annotation = g.dashboard.annotation;
         enabled: true,
         anomalyPercentageThreshold: 15,
       },
+      efficiency: {
+        enabled: true,
+        // Fire when namespace total (cost-weighted) efficiency falls below this ratio.
+        minEfficiencyThreshold: 0.20,
+        // Only evaluate namespaces whose projected monthly cost exceeds this USD amount.
+        minMonthlyCostThreshold: 500,
+        severity: 'info',
+      },
     },
 
     tags: ['opencost', 'opencost-mixin'],

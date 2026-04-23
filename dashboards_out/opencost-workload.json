@@ -663,6 +663,320 @@
             "y": 25
          },
          "id": 13,
+         "title": "Efficiency",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "CPU usage / CPU allocation for the selected workload(s). Values well below 1.0 indicate containers allocated more CPU than they are actually using. Mirrors CPUEfficiency from the OpenCost UI.",
+         "fieldConfig": {
+            "defaults": {
+               "decimals": 2,
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "percentunit"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 0,
+            "y": 26
+         },
+         "id": 14,
+         "options": {
+            "graphMode": "none",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "workload:efficiency_cpu:ratio{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}",
+               "instant": false
+            }
+         ],
+         "title": "CPU Efficiency",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Working-set RAM / RAM allocation for the selected workload(s). Mirrors RAMEfficiency from the OpenCost UI.",
+         "fieldConfig": {
+            "defaults": {
+               "decimals": 2,
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "percentunit"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 6,
+            "y": 26
+         },
+         "id": 15,
+         "options": {
+            "graphMode": "none",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "workload:efficiency_ram:ratio{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}",
+               "instant": false
+            }
+         ],
+         "title": "RAM Efficiency",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Workload total (cost-weighted) efficiency combining CPU and RAM. Mirrors TotalEfficiency from the OpenCost UI.",
+         "fieldConfig": {
+            "defaults": {
+               "decimals": 2,
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "percentunit"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 12,
+            "y": 26
+         },
+         "id": 16,
+         "options": {
+            "graphMode": "none",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "workload:efficiency_total:ratio{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}",
+               "instant": false
+            }
+         ],
+         "title": "Total Efficiency",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Projected monthly spend for the selected workload(s) that is currently idle (allocated but unused): (1 - Total Efficiency) × (CPU Cost + RAM Cost) × 730h.",
+         "fieldConfig": {
+            "defaults": {
+               "decimals": 2,
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "currencyUSD"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 18,
+            "y": 26
+         },
+         "id": 17,
+         "options": {
+            "graphMode": "none",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "(1 - workload:efficiency_total:ratio{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n})\n*\n(\n  workload:opencost_cpu_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}\n  +\n  workload:opencost_ram_cost:sum{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}\n)\n* 730\n",
+               "instant": false
+            }
+         ],
+         "title": "Monthly Waste",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "CPU efficiency over time for the selected workload(s).",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "fillOpacity": 10
+               },
+               "unit": "percentunit"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 0,
+            "y": 29
+         },
+         "id": 18,
+         "options": {
+            "legend": {
+               "calcs": [
+                  "mean",
+                  "max"
+               ],
+               "displayMode": "table",
+               "placement": "right",
+               "showLegend": true,
+               "sortBy": "Mean",
+               "sortDesc": true
+            },
+            "tooltip": {
+               "mode": "multi",
+               "sort": "desc"
+            }
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "exemplar": false,
+               "expr": "workload:efficiency_cpu:ratio{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}",
+               "interval": "30m",
+               "legendFormat": "{{workload_type}}/{{workload}}"
+            }
+         ],
+         "title": "CPU Efficiency",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "RAM efficiency over time for the selected workload(s).",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "fillOpacity": 10
+               },
+               "unit": "percentunit"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 29
+         },
+         "id": 19,
+         "options": {
+            "legend": {
+               "calcs": [
+                  "mean",
+                  "max"
+               ],
+               "displayMode": "table",
+               "placement": "right",
+               "showLegend": true,
+               "sortBy": "Mean",
+               "sortDesc": true
+            },
+            "tooltip": {
+               "mode": "multi",
+               "sort": "desc"
+            }
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "exemplar": false,
+               "expr": "workload:efficiency_ram:ratio{cluster=\"$cluster\",\nnamespace=\"$namespace\",\nworkload_type=~\"$workload_type\",\nworkload=~\"$workload\"\n}",
+               "interval": "30m",
+               "legendFormat": "{{workload_type}}/{{workload}}"
+            }
+         ],
+         "title": "RAM Efficiency",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 34
+         },
+         "id": 20,
          "title": "Workload Breakdown",
          "type": "row"
       },
@@ -686,9 +1000,9 @@
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 26
+            "y": 35
          },
-         "id": 14,
+         "id": 21,
          "options": {
             "footer": {
                "enablePagination": true
@@ -790,9 +1104,9 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 36
+            "y": 45
          },
-         "id": 15,
+         "id": 22,
          "title": "Persistent Volume Claims",
          "type": "row"
       },
@@ -816,9 +1130,9 @@
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 37
+            "y": 46
          },
-         "id": 16,
+         "id": 23,
          "options": {
             "footer": {
                "enablePagination": true

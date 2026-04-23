@@ -762,6 +762,320 @@
             "y": 20
          },
          "id": 15,
+         "title": "Efficiency",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Cost-weighted average CPU efficiency across all namespaces in the cluster. Efficiency = CPU usage / CPU allocation. Values closer to 1.0 indicate that requested CPU is being actively consumed; values well below 1.0 indicate over-requested workloads that can be rightsized. Mirrors the CPUEfficiency metric from the OpenCost UI.",
+         "fieldConfig": {
+            "defaults": {
+               "decimals": 2,
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "percentunit"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 0,
+            "y": 21
+         },
+         "id": 16,
+         "options": {
+            "graphMode": "none",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum(namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"} * namespace:efficiency_cpu:ratio{cluster=\"$cluster\"})\n/\nsum(namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"})\n",
+               "instant": false
+            }
+         ],
+         "title": "CPU Efficiency",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Cost-weighted average memory efficiency across all namespaces in the cluster. Efficiency = working-set RAM / RAM allocation. Mirrors the RAMEfficiency metric from the OpenCost UI.",
+         "fieldConfig": {
+            "defaults": {
+               "decimals": 2,
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "percentunit"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 6,
+            "y": 21
+         },
+         "id": 17,
+         "options": {
+            "graphMode": "none",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "sum(namespace:opencost_ram_cost:sum{cluster=\"$cluster\"} * namespace:efficiency_ram:ratio{cluster=\"$cluster\"})\n/\nsum(namespace:opencost_ram_cost:sum{cluster=\"$cluster\"})\n",
+               "instant": false
+            }
+         ],
+         "title": "RAM Efficiency",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Cluster total (cost-weighted) efficiency combining CPU and RAM: (CPUCost × CPUEff + RAMCost × RAMEff) / (CPUCost + RAMCost). Mirrors the TotalEfficiency metric from the OpenCost UI.",
+         "fieldConfig": {
+            "defaults": {
+               "decimals": 2,
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "percentunit"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 12,
+            "y": 21
+         },
+         "id": 18,
+         "options": {
+            "graphMode": "none",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "(\n  sum(namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"} * namespace:efficiency_cpu:ratio{cluster=\"$cluster\"})\n  +\n  sum(namespace:opencost_ram_cost:sum{cluster=\"$cluster\"} * namespace:efficiency_ram:ratio{cluster=\"$cluster\"})\n)\n/\n(\n  sum(namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"})\n  +\n  sum(namespace:opencost_ram_cost:sum{cluster=\"$cluster\"})\n)\n",
+               "instant": false
+            }
+         ],
+         "title": "Total Efficiency",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Projected monthly spend that is currently idle (allocated but unused): (1 - Total Efficiency) × (CPU Cost + RAM Cost) × 730h. Represents the theoretical savings if all requests were perfectly sized to actual usage.",
+         "fieldConfig": {
+            "defaults": {
+               "decimals": 2,
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "currencyUSD"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 3,
+            "w": 6,
+            "x": 18,
+            "y": 21
+         },
+         "id": 19,
+         "options": {
+            "graphMode": "none",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "expr": "(\n  1 -\n  (\n    (\n      sum(namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"} * namespace:efficiency_cpu:ratio{cluster=\"$cluster\"})\n      +\n      sum(namespace:opencost_ram_cost:sum{cluster=\"$cluster\"} * namespace:efficiency_ram:ratio{cluster=\"$cluster\"})\n    )\n    /\n    (\n      sum(namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"})\n      +\n      sum(namespace:opencost_ram_cost:sum{cluster=\"$cluster\"})\n    )\n  )\n)\n*\n(\n  sum(namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"})\n  +\n  sum(namespace:opencost_ram_cost:sum{cluster=\"$cluster\"})\n)\n* 730\n",
+               "instant": false
+            }
+         ],
+         "title": "Monthly Waste",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Top 10 namespaces by CPU efficiency. Low values indicate namespaces that have been allocated more CPU than they are actually using.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "fillOpacity": 10
+               },
+               "unit": "percentunit"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 0,
+            "y": 24
+         },
+         "id": 20,
+         "options": {
+            "legend": {
+               "calcs": [
+                  "mean",
+                  "max"
+               ],
+               "displayMode": "table",
+               "placement": "right",
+               "showLegend": true,
+               "sortBy": "Mean",
+               "sortDesc": true
+            },
+            "tooltip": {
+               "mode": "multi",
+               "sort": "desc"
+            }
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "exemplar": false,
+               "expr": "topk(10,\n  namespace:efficiency_cpu:ratio{cluster=\"$cluster\"}\n)\n",
+               "interval": "30m",
+               "legendFormat": "{{namespace}}"
+            }
+         ],
+         "title": "CPU Efficiency by Namespace (Top 10)",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Top 10 namespaces by RAM efficiency. Low values indicate namespaces whose containers have memory requests well above their working-set usage.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "fillOpacity": 10
+               },
+               "unit": "percentunit"
+            },
+            "overrides": [ ]
+         },
+         "gridPos": {
+            "h": 5,
+            "w": 12,
+            "x": 12,
+            "y": 24
+         },
+         "id": 21,
+         "options": {
+            "legend": {
+               "calcs": [
+                  "mean",
+                  "max"
+               ],
+               "displayMode": "table",
+               "placement": "right",
+               "showLegend": true,
+               "sortBy": "Mean",
+               "sortDesc": true
+            },
+            "tooltip": {
+               "mode": "multi",
+               "sort": "desc"
+            }
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "exemplar": false,
+               "expr": "topk(10,\n  namespace:efficiency_ram:ratio{cluster=\"$cluster\"}\n)\n",
+               "interval": "30m",
+               "legendFormat": "{{namespace}}"
+            }
+         ],
+         "title": "RAM Efficiency by Namespace (Top 10)",
+         "type": "timeseries"
+      },
+      {
+         "collapsed": false,
+         "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 29
+         },
+         "id": 22,
          "title": "Cloud Resources",
          "type": "row"
       },
@@ -785,9 +1099,9 @@
             "h": 10,
             "w": 16,
             "x": 0,
-            "y": 21
+            "y": 30
          },
-         "id": 16,
+         "id": 23,
          "options": {
             "footer": {
                "enablePagination": true
@@ -895,9 +1209,9 @@
             "h": 10,
             "w": 8,
             "x": 16,
-            "y": 21
+            "y": 30
          },
-         "id": 17,
+         "id": 24,
          "options": {
             "footer": {
                "enablePagination": true
@@ -963,9 +1277,9 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 31
+            "y": 40
          },
-         "id": 18,
+         "id": 25,
          "title": "Namespace Summary",
          "type": "row"
       },
@@ -1070,9 +1384,9 @@
             "h": 12,
             "w": 24,
             "x": 0,
-            "y": 32
+            "y": 41
          },
-         "id": 19,
+         "id": 26,
          "options": {
             "footer": {
                "enablePagination": true

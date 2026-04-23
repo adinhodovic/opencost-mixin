@@ -303,6 +303,38 @@ local tbOverride = tbStandardOptions.override;
         ||| % defaultFilters,
         pvMonthlyCostByPv: std.strReplace(queries.monthlyPVCost, '* 730', 'by (persistentvolume) * 730'),
         pvcMonthlyCostByClaim: std.strReplace(queries.monthlyPVCost, '* 730', 'by (persistentvolumeclaim) * 730'),
+
+        // Efficiency queries — mirror OpenCost's native CPUEfficiency, RAMEfficiency and
+        // TotalEfficiency calculation (see https://www.opencost.io/docs/specification#efficiency).
+        // Backed by the opencost.rules.efficiency recording rules shipped in this mixin.
+        // The recording rules aggregate by (cluster, namespace) so the job label is not
+        // present; queries below select by cluster+namespace only.
+        namespaceCpuEfficiency: 'namespace:efficiency_cpu:ratio{%(cluster)s, %(namespace)s}' % defaultFilters,
+        namespaceRamEfficiency: 'namespace:efficiency_ram:ratio{%(cluster)s, %(namespace)s}' % defaultFilters,
+        namespaceTotalEfficiency: 'namespace:efficiency_total:ratio{%(cluster)s, %(namespace)s}' % defaultFilters,
+
+        namespaceMonthlyWaste: |||
+          (1 - namespace:efficiency_total:ratio{%(cluster)s, %(namespace)s})
+          *
+          (
+            namespace:opencost_cpu_cost:sum{%(cluster)s, %(namespace)s}
+            +
+            namespace:opencost_ram_cost:sum{%(cluster)s, %(namespace)s}
+          )
+          * 730
+        ||| % defaultFilters,
+
+        workloadCpuEfficiencyTopN: |||
+          topk(10,
+            workload:efficiency_cpu:ratio{%(cluster)s, %(namespace)s}
+          )
+        ||| % defaultFilters,
+
+        workloadRamEfficiencyTopN: |||
+          topk(10,
+            workload:efficiency_ram:ratio{%(cluster)s, %(namespace)s}
+          )
+        ||| % defaultFilters,
       };
 
       local panels = {
@@ -677,6 +709,74 @@ local tbOverride = tbStandardOptions.override;
             values=['percent', 'value'],
             description='Distribution of monthly storage costs across Persistent Volume Claims in the namespace. This shows which claims consume the most storage budget and helps identify whether storage costs are concentrated in a few large claims or distributed across many smaller ones.',
           ),
+
+        cpuEfficiencyStat:
+          dashboards.statPanel(
+            'CPU Efficiency',
+            'percentunit',
+            queries.namespaceCpuEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='CPU usage / CPU allocation for the selected namespace. Values well below 1.0 indicate containers that have been allocated more CPU than they are actually using. Mirrors the CPUEfficiency metric from the OpenCost UI.',
+          ),
+
+        ramEfficiencyStat:
+          dashboards.statPanel(
+            'RAM Efficiency',
+            'percentunit',
+            queries.namespaceRamEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='Working-set RAM / RAM allocation for the selected namespace. Mirrors the RAMEfficiency metric from the OpenCost UI.',
+          ),
+
+        totalEfficiencyStat:
+          dashboards.statPanel(
+            'Total Efficiency',
+            'percentunit',
+            queries.namespaceTotalEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='Namespace total (cost-weighted) efficiency combining CPU and RAM. Mirrors TotalEfficiency from the OpenCost UI.',
+          ),
+
+        monthlyWasteStat:
+          dashboards.statPanel(
+            'Monthly Waste',
+            'currencyUSD',
+            queries.namespaceMonthlyWaste,
+            graphMode='none',
+            decimals=2,
+            description='Projected monthly spend in this namespace that is currently idle (allocated but unused): (1 - Total Efficiency) × (CPU Cost + RAM Cost) × 730h.',
+          ),
+
+        workloadCpuEfficiencyTimeSeries:
+          dashboards.timeSeriesPanel(
+            'CPU Efficiency by Workload (Top 10)',
+            'percentunit',
+            [
+              {
+                expr: queries.workloadCpuEfficiencyTopN,
+                legend: '{{workload_type}}/{{workload}}',
+                interval: $._config.dashboardMinInterval,
+              },
+            ],
+            description='Top 10 workloads inside the selected namespace by CPU efficiency. Low values indicate workloads that have been allocated more CPU than they are actually using.',
+          ),
+
+        workloadRamEfficiencyTimeSeries:
+          dashboards.timeSeriesPanel(
+            'RAM Efficiency by Workload (Top 10)',
+            'percentunit',
+            [
+              {
+                expr: queries.workloadRamEfficiencyTopN,
+                legend: '{{workload_type}}/{{workload}}',
+                interval: $._config.dashboardMinInterval,
+              },
+            ],
+            description='Top 10 workloads inside the selected namespace by RAM efficiency.',
+          ),
       };
 
       local rows =
@@ -724,15 +824,44 @@ local tbOverride = tbStandardOptions.override;
         ) +
         [
           row.new(
-            'Pod Summary',
+            'Efficiency',
           ) +
           row.gridPos.withX(0) +
           row.gridPos.withY(23) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
+        ] +
+        grid.wrapPanels(
+          [
+            panels.cpuEfficiencyStat,
+            panels.ramEfficiencyStat,
+            panels.totalEfficiencyStat,
+            panels.monthlyWasteStat,
+          ],
+          panelWidth=6,
+          panelHeight=3,
+          startY=24
+        ) +
+        grid.wrapPanels(
+          [
+            panels.workloadCpuEfficiencyTimeSeries,
+            panels.workloadRamEfficiencyTimeSeries,
+          ],
+          panelWidth=12,
+          panelHeight=5,
+          startY=27
+        ) +
+        [
+          row.new(
+            'Pod Summary',
+          ) +
+          row.gridPos.withX(0) +
+          row.gridPos.withY(32) +
+          row.gridPos.withW(24) +
+          row.gridPos.withH(1),
           panels.podTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(24) +
+          tablePanel.gridPos.withY(33) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
         ] +
@@ -741,12 +870,12 @@ local tbOverride = tbStandardOptions.override;
             'Container Summary',
           ) +
           row.gridPos.withX(0) +
-          row.gridPos.withY(34) +
+          row.gridPos.withY(43) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.containerTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(35) +
+          tablePanel.gridPos.withY(44) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
         ] +
@@ -755,12 +884,12 @@ local tbOverride = tbStandardOptions.override;
             'PV Summary',
           ) +
           row.gridPos.withX(0) +
-          row.gridPos.withY(45) +
+          row.gridPos.withY(54) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.pvTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(46) +
+          tablePanel.gridPos.withY(55) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
         ];

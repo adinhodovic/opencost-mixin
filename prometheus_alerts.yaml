@@ -141,3 +141,20 @@
     "for": "10m"
     "labels":
       "severity": "warning"
+- "name": "opencost-efficiency"
+  "rules":
+  - "alert": "OpenCostLowEfficiencyNamespace"
+    "annotations":
+      "dashboard_url": "https://grafana.com/d/opencost-mixin-namespace-jkwq/opencost-namespace"
+      "description": "Total CPU+RAM cost-weighted efficiency for namespace {{ $labels.namespace }} on cluster {{ $labels.cluster }} has averaged {{ $value | humanizePercentage }} over the last 7 days while projected monthly cost exceeds $500. Consider rightsizing container requests. Formula mirrors OpenCost allocation.go (CPUEfficiency, RAMEfficiency, TotalEfficiency) — spec at https://www.opencost.io/docs/specification#efficiency."
+      "summary": "Namespace {{ $labels.namespace }} on {{ $labels.cluster }} is chronically under-utilizing its requests"
+    "expr": |
+      avg_over_time(namespace:efficiency_total:ratio[7d]) < 0.20000000000000001
+      and
+      (
+        avg_over_time(namespace:opencost_cpu_cost:sum[7d])
+        + avg_over_time(namespace:opencost_ram_cost:sum[7d])
+      ) * 730 > 500
+    "for": "1h"
+    "labels":
+      "severity": "info"

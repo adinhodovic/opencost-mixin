@@ -349,6 +349,75 @@ local tbOverride = tbStandardOptions.override;
             * 730
           ) by (persistentvolume)
         ||| % defaultFilters,
+
+        // Efficiency queries — mirror OpenCost's native CPUEfficiency, RAMEfficiency
+        // and TotalEfficiency (cost-weighted) calculation. See
+        // https://www.opencost.io/docs/specification#efficiency and
+        // https://github.com/opencost/opencost/blob/develop/core/pkg/opencost/allocation.go.
+        // Backed by the opencost.rules.efficiency recording rules shipped in this mixin.
+        clusterCpuEfficiency: |||
+          sum(namespace:opencost_cpu_cost:sum{%(cluster)s} * namespace:efficiency_cpu:ratio{%(cluster)s})
+          /
+          sum(namespace:opencost_cpu_cost:sum{%(cluster)s})
+        ||| % defaultFilters,
+
+        clusterRamEfficiency: |||
+          sum(namespace:opencost_ram_cost:sum{%(cluster)s} * namespace:efficiency_ram:ratio{%(cluster)s})
+          /
+          sum(namespace:opencost_ram_cost:sum{%(cluster)s})
+        ||| % defaultFilters,
+
+        clusterTotalEfficiency: |||
+          (
+            sum(namespace:opencost_cpu_cost:sum{%(cluster)s} * namespace:efficiency_cpu:ratio{%(cluster)s})
+            +
+            sum(namespace:opencost_ram_cost:sum{%(cluster)s} * namespace:efficiency_ram:ratio{%(cluster)s})
+          )
+          /
+          (
+            sum(namespace:opencost_cpu_cost:sum{%(cluster)s})
+            +
+            sum(namespace:opencost_ram_cost:sum{%(cluster)s})
+          )
+        ||| % defaultFilters,
+
+        clusterMonthlyWaste: |||
+          (
+            1 -
+            (
+              (
+                sum(namespace:opencost_cpu_cost:sum{%(cluster)s} * namespace:efficiency_cpu:ratio{%(cluster)s})
+                +
+                sum(namespace:opencost_ram_cost:sum{%(cluster)s} * namespace:efficiency_ram:ratio{%(cluster)s})
+              )
+              /
+              (
+                sum(namespace:opencost_cpu_cost:sum{%(cluster)s})
+                +
+                sum(namespace:opencost_ram_cost:sum{%(cluster)s})
+              )
+            )
+          )
+          *
+          (
+            sum(namespace:opencost_cpu_cost:sum{%(cluster)s})
+            +
+            sum(namespace:opencost_ram_cost:sum{%(cluster)s})
+          )
+          * 730
+        ||| % defaultFilters,
+
+        namespaceCpuEfficiencyTopN: |||
+          topk(10,
+            namespace:efficiency_cpu:ratio{%(cluster)s}
+          )
+        ||| % defaultFilters,
+
+        namespaceRamEfficiencyTopN: |||
+          topk(10,
+            namespace:efficiency_ram:ratio{%(cluster)s}
+          )
+        ||| % defaultFilters,
       };
 
       local panels = {
@@ -727,6 +796,74 @@ local tbOverride = tbStandardOptions.override;
               tbStandardOptions.threshold.step.withColor('red'),
             ]
           ),
+
+        cpuEfficiencyStat:
+          dashboards.statPanel(
+            'CPU Efficiency',
+            'percentunit',
+            queries.clusterCpuEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='Cost-weighted average CPU efficiency across all namespaces in the cluster. Efficiency = CPU usage / CPU allocation. Values closer to 1.0 indicate that requested CPU is being actively consumed; values well below 1.0 indicate over-requested workloads that can be rightsized. Mirrors the CPUEfficiency metric from the OpenCost UI.',
+          ),
+
+        ramEfficiencyStat:
+          dashboards.statPanel(
+            'RAM Efficiency',
+            'percentunit',
+            queries.clusterRamEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='Cost-weighted average memory efficiency across all namespaces in the cluster. Efficiency = working-set RAM / RAM allocation. Mirrors the RAMEfficiency metric from the OpenCost UI.',
+          ),
+
+        totalEfficiencyStat:
+          dashboards.statPanel(
+            'Total Efficiency',
+            'percentunit',
+            queries.clusterTotalEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='Cluster total (cost-weighted) efficiency combining CPU and RAM: (CPUCost × CPUEff + RAMCost × RAMEff) / (CPUCost + RAMCost). Mirrors the TotalEfficiency metric from the OpenCost UI.',
+          ),
+
+        monthlyWasteStat:
+          dashboards.statPanel(
+            'Monthly Waste',
+            'currencyUSD',
+            queries.clusterMonthlyWaste,
+            graphMode='none',
+            decimals=2,
+            description='Projected monthly spend that is currently idle (allocated but unused): (1 - Total Efficiency) × (CPU Cost + RAM Cost) × 730h. Represents the theoretical savings if all requests were perfectly sized to actual usage.',
+          ),
+
+        namespaceCpuEfficiencyTimeSeries:
+          dashboards.timeSeriesPanel(
+            'CPU Efficiency by Namespace (Top 10)',
+            'percentunit',
+            [
+              {
+                expr: queries.namespaceCpuEfficiencyTopN,
+                legend: '{{namespace}}',
+                interval: $._config.dashboardMinInterval,
+              },
+            ],
+            description='Top 10 namespaces by CPU efficiency. Low values indicate namespaces that have been allocated more CPU than they are actually using.',
+          ),
+
+        namespaceRamEfficiencyTimeSeries:
+          dashboards.timeSeriesPanel(
+            'RAM Efficiency by Namespace (Top 10)',
+            'percentunit',
+            [
+              {
+                expr: queries.namespaceRamEfficiencyTopN,
+                legend: '{{namespace}}',
+                interval: $._config.dashboardMinInterval,
+              },
+            ],
+            description='Top 10 namespaces by RAM efficiency. Low values indicate namespaces whose containers have memory requests well above their working-set usage.',
+          ),
       };
 
       local rows =
@@ -779,31 +916,58 @@ local tbOverride = tbStandardOptions.override;
           startY=15
         ) +
         [
-          row.new('Cloud Resources') +
+          row.new('Efficiency') +
           row.gridPos.withX(0) +
           row.gridPos.withY(20) +
+          row.gridPos.withW(24) +
+          row.gridPos.withH(1),
+        ] +
+        grid.wrapPanels(
+          [
+            panels.cpuEfficiencyStat,
+            panels.ramEfficiencyStat,
+            panels.totalEfficiencyStat,
+            panels.monthlyWasteStat,
+          ],
+          panelWidth=6,
+          panelHeight=3,
+          startY=21
+        ) +
+        grid.wrapPanels(
+          [
+            panels.namespaceCpuEfficiencyTimeSeries,
+            panels.namespaceRamEfficiencyTimeSeries,
+          ],
+          panelWidth=12,
+          panelHeight=5,
+          startY=24
+        ) +
+        [
+          row.new('Cloud Resources') +
+          row.gridPos.withX(0) +
+          row.gridPos.withY(29) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
         ] +
         [
           panels.nodeTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(21) +
+          tablePanel.gridPos.withY(30) +
           tablePanel.gridPos.withW(16) +
           tablePanel.gridPos.withH(10),
           panels.pvTable +
           tablePanel.gridPos.withX(16) +
-          tablePanel.gridPos.withY(21) +
+          tablePanel.gridPos.withY(30) +
           tablePanel.gridPos.withW(8) +
           tablePanel.gridPos.withH(10),
           row.new('Namespace Summary') +
           row.gridPos.withX(0) +
-          row.gridPos.withY(31) +
+          row.gridPos.withY(40) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.namespaceTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(32) +
+          tablePanel.gridPos.withY(41) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(12),
         ];
