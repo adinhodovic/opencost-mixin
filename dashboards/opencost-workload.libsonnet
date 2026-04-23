@@ -175,6 +175,26 @@ local tbQueryOptions = tablePanel.queryOptions;
           ) by (pod)
         ||| % ($._config { workloadFilters: workloadFilters }),
 
+        // Efficiency queries — mirror OpenCost's native CPUEfficiency, RAMEfficiency and
+        // TotalEfficiency calculation (see https://www.opencost.io/docs/specification#efficiency).
+        // Backed by the workload:efficiency_*:ratio recording rules shipped in this mixin.
+        workloadCpuEfficiency: 'workload:efficiency_cpu:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
+        workloadRamEfficiency: 'workload:efficiency_ram:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
+        workloadTotalEfficiency: 'workload:efficiency_total:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
+
+        workloadMonthlyWaste: |||
+          (1 - workload:efficiency_total:ratio{%(withNamespaceWorkload)s})
+          *
+          (
+            workload:opencost_cpu_cost:sum{%(withNamespaceWorkload)s}
+            +
+            workload:opencost_ram_cost:sum{%(withNamespaceWorkload)s}
+          )
+          * 730
+        ||| % defaultFilters,
+
+        workloadCpuEfficiencyTimeSeriesQuery: 'workload:efficiency_cpu:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
+        workloadRamEfficiencyTimeSeriesQuery: 'workload:efficiency_ram:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
       };
 
       local panels = {
@@ -443,6 +463,74 @@ local tbQueryOptions = tablePanel.queryOptions;
               ),
             ]
           ),
+
+        cpuEfficiencyStat:
+          dashboards.statPanel(
+            'CPU Efficiency',
+            'percentunit',
+            queries.workloadCpuEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='CPU usage / CPU allocation for the selected workload(s). Values well below 1.0 indicate containers allocated more CPU than they are actually using. Mirrors CPUEfficiency from the OpenCost UI.',
+          ),
+
+        ramEfficiencyStat:
+          dashboards.statPanel(
+            'RAM Efficiency',
+            'percentunit',
+            queries.workloadRamEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='Working-set RAM / RAM allocation for the selected workload(s). Mirrors RAMEfficiency from the OpenCost UI.',
+          ),
+
+        totalEfficiencyStat:
+          dashboards.statPanel(
+            'Total Efficiency',
+            'percentunit',
+            queries.workloadTotalEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='Workload total (cost-weighted) efficiency combining CPU and RAM. Mirrors TotalEfficiency from the OpenCost UI.',
+          ),
+
+        monthlyWasteStat:
+          dashboards.statPanel(
+            'Monthly Waste',
+            'currencyUSD',
+            queries.workloadMonthlyWaste,
+            graphMode='none',
+            decimals=2,
+            description='Projected monthly spend for the selected workload(s) that is currently idle (allocated but unused): (1 - Total Efficiency) × (CPU Cost + RAM Cost) × 730h.',
+          ),
+
+        cpuEfficiencyTimeSeries:
+          dashboards.timeSeriesPanel(
+            'CPU Efficiency',
+            'percentunit',
+            [
+              {
+                expr: queries.workloadCpuEfficiencyTimeSeriesQuery,
+                legend: '{{workload_type}}/{{workload}}',
+                interval: $._config.dashboardMinInterval,
+              },
+            ],
+            description='CPU efficiency over time for the selected workload(s).',
+          ),
+
+        ramEfficiencyTimeSeries:
+          dashboards.timeSeriesPanel(
+            'RAM Efficiency',
+            'percentunit',
+            [
+              {
+                expr: queries.workloadRamEfficiencyTimeSeriesQuery,
+                legend: '{{workload_type}}/{{workload}}',
+                interval: $._config.dashboardMinInterval,
+              },
+            ],
+            description='RAM efficiency over time for the selected workload(s).',
+          ),
       };
 
       local rows =
@@ -486,24 +574,51 @@ local tbQueryOptions = tablePanel.queryOptions;
           startY=10
         ) +
         [
-          row.new('Workload Breakdown') +
+          row.new('Efficiency') +
           row.gridPos.withX(0) +
           row.gridPos.withY(25) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
+        ] +
+        grid.wrapPanels(
+          [
+            panels.cpuEfficiencyStat,
+            panels.ramEfficiencyStat,
+            panels.totalEfficiencyStat,
+            panels.monthlyWasteStat,
+          ],
+          panelWidth=6,
+          panelHeight=3,
+          startY=26
+        ) +
+        grid.wrapPanels(
+          [
+            panels.cpuEfficiencyTimeSeries,
+            panels.ramEfficiencyTimeSeries,
+          ],
+          panelWidth=12,
+          panelHeight=5,
+          startY=29
+        ) +
+        [
+          row.new('Workload Breakdown') +
+          row.gridPos.withX(0) +
+          row.gridPos.withY(34) +
+          row.gridPos.withW(24) +
+          row.gridPos.withH(1),
           panels.workloadTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(26) +
+          tablePanel.gridPos.withY(35) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
           row.new('Persistent Volume Claims') +
           row.gridPos.withX(0) +
-          row.gridPos.withY(36) +
+          row.gridPos.withY(45) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.pvcTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(37) +
+          tablePanel.gridPos.withY(46) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(8),
         ];

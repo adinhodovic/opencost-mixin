@@ -157,6 +157,36 @@
           },
         ],
       },
+      if $._config.alerts.efficiency.enabled then {
+        name: 'opencost-efficiency',
+        rules: [
+          {
+            // Fires when a namespace's cost-weighted efficiency stays below the
+            // configured threshold over 7d AND the namespace is spending more
+            // than minMonthlyCostThreshold. Mirrors OpenCost's native formula
+            // (see core/pkg/opencost/allocation.go — CPUEfficiency, RAMEfficiency,
+            // TotalEfficiency). Spec: https://www.opencost.io/docs/specification#efficiency
+            alert: 'OpenCostLowEfficiencyNamespace',
+            expr: |||
+              avg_over_time(namespace:efficiency_total:ratio[7d]) < %(minEfficiencyThreshold)s
+              and
+              (
+                avg_over_time(namespace:opencost_cpu_cost:sum[7d])
+                + avg_over_time(namespace:opencost_ram_cost:sum[7d])
+              ) * 730 > %(minMonthlyCostThreshold)s
+            ||| % $._config.alerts.efficiency,
+            labels: {
+              severity: $._config.alerts.efficiency.severity,
+            },
+            'for': '1h',
+            annotations: {
+              summary: 'Namespace {{ $labels.namespace }} on {{ $labels.%(clusterLabel)s }} is chronically under-utilizing its requests' % $._config,
+              description: ('Total CPU+RAM cost-weighted efficiency for namespace {{ $labels.namespace }} on cluster {{ $labels.%(clusterLabel)s }} has averaged {{ $value | humanizePercentage }} over the last 7 days while projected monthly cost exceeds $%(minMonthlyCostThreshold)s. Consider rightsizing container requests. Formula mirrors OpenCost allocation.go (CPUEfficiency, RAMEfficiency, TotalEfficiency) — spec at https://www.opencost.io/docs/specification#efficiency.') % ($._config { minMonthlyCostThreshold: $._config.alerts.efficiency.minMonthlyCostThreshold }),
+              dashboard_url: $._config.dashboardUrls['opencost-namespace'] + clusterVariableQueryString,
+            },
+          },
+        ],
+      },
     ]),
   },
 }

@@ -1,5 +1,78 @@
 "groups":
 - "interval": "5m"
+  "name": "opencost.rules.efficiency"
+  "rules":
+  - "expr": |
+      sum by (cluster, namespace) (
+        rate(container_cpu_usage_seconds_total{job="kube-system/cadvisor", container!="", image!=""}[5m])
+      )
+      /
+      sum by (cluster, namespace) (
+        container_cpu_allocation{job="opencost"}
+      )
+    "record": "namespace:efficiency_cpu:ratio"
+  - "expr": |
+      sum by (cluster, namespace) (
+        container_memory_working_set_bytes{job="kube-system/cadvisor", container!="", image!=""}
+      )
+      /
+      sum by (cluster, namespace) (
+        container_memory_allocation_bytes{job="opencost"}
+      )
+    "record": "namespace:efficiency_ram:ratio"
+  - "expr": "sum by (cluster, namespace) (workload:opencost_cpu_cost:sum)"
+    "record": "namespace:opencost_cpu_cost:sum"
+  - "expr": "sum by (cluster, namespace) (workload:opencost_ram_cost:sum)"
+    "record": "namespace:opencost_ram_cost:sum"
+  - "expr": |
+      (
+        namespace:opencost_cpu_cost:sum * namespace:efficiency_cpu:ratio
+        +
+        namespace:opencost_ram_cost:sum * namespace:efficiency_ram:ratio
+      )
+      /
+      (
+        namespace:opencost_cpu_cost:sum + namespace:opencost_ram_cost:sum
+      )
+    "record": "namespace:efficiency_total:ratio"
+  - "expr": |
+      sum by (cluster, namespace, workload_type, workload) (
+        rate(container_cpu_usage_seconds_total{job="kube-system/cadvisor", container!="", image!=""}[5m])
+        * on(cluster, namespace, pod) group_left(workload_type, workload)
+        max by (cluster, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
+      )
+      /
+      sum by (cluster, namespace, workload_type, workload) (
+        container_cpu_allocation{job="opencost"}
+        * on(cluster, namespace, pod) group_left(workload_type, workload)
+        max by (cluster, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
+      )
+    "record": "workload:efficiency_cpu:ratio"
+  - "expr": |
+      sum by (cluster, namespace, workload_type, workload) (
+        container_memory_working_set_bytes{job="kube-system/cadvisor", container!="", image!=""}
+        * on(cluster, namespace, pod) group_left(workload_type, workload)
+        max by (cluster, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
+      )
+      /
+      sum by (cluster, namespace, workload_type, workload) (
+        container_memory_allocation_bytes{job="opencost"}
+        * on(cluster, namespace, pod) group_left(workload_type, workload)
+        max by (cluster, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
+      )
+    "record": "workload:efficiency_ram:ratio"
+  - "expr": |
+      (
+        workload:opencost_cpu_cost:sum * workload:efficiency_cpu:ratio
+        +
+        workload:opencost_ram_cost:sum * workload:efficiency_ram:ratio
+      )
+      /
+      (
+        workload:opencost_cpu_cost:sum + workload:opencost_ram_cost:sum
+      )
+    "record": "workload:efficiency_total:ratio"
+- "interval": "5m"
   "name": "opencost.rules.workload"
   "rules":
   - "expr": |
