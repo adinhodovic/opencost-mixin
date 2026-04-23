@@ -4,7 +4,7 @@
   "rules":
   - "expr": |
       sum by (cluster, namespace) (
-        rate(container_cpu_usage_seconds_total{container!="",image!=""}[5m])
+        rate(container_cpu_usage_seconds_total{job="kube-system/cadvisor", container!="", image!=""}[5m])
       )
       /
       sum by (cluster, namespace) (
@@ -13,7 +13,7 @@
     "record": "namespace:efficiency_cpu:ratio"
   - "expr": |
       sum by (cluster, namespace) (
-        container_memory_working_set_bytes{container!="",image!=""}
+        container_memory_working_set_bytes{job="kube-system/cadvisor", container!="", image!=""}
       )
       /
       sum by (cluster, namespace) (
@@ -37,7 +37,7 @@
     "record": "namespace:efficiency_total:ratio"
   - "expr": |
       sum by (cluster, namespace, workload_type, workload) (
-        rate(container_cpu_usage_seconds_total{container!="",image!=""}[5m])
+        rate(container_cpu_usage_seconds_total{job="kube-system/cadvisor", container!="", image!=""}[5m])
         * on(cluster, namespace, pod) group_left(workload_type, workload)
         max by (cluster, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
       )
@@ -50,7 +50,7 @@
     "record": "workload:efficiency_cpu:ratio"
   - "expr": |
       sum by (cluster, namespace, workload_type, workload) (
-        container_memory_working_set_bytes{container!="",image!=""}
+        container_memory_working_set_bytes{job="kube-system/cadvisor", container!="", image!=""}
         * on(cluster, namespace, pod) group_left(workload_type, workload)
         max by (cluster, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
       )

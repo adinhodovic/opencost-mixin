@@ -12,6 +12,12 @@ local annotation = g.dashboard.annotation;
 
     openCostSelector: 'job="opencost"',
     kubeStateMetricsSelector: 'job="kube-state-metrics"',
+    // Label selector for cAdvisor / kubelet metrics used in the efficiency
+    // recording rules (container_cpu_usage_seconds_total,
+    // container_memory_working_set_bytes). Override to match your scrape
+    // config — common alternatives are 'job="kubelet", metrics_path="/metrics/cadvisor"'
+    // (kube-prometheus-stack) or 'job="cadvisor"'.
+    cadvisorSelector: 'job="kube-system/cadvisor"',
 
     // Default datasource name
     datasourceName: 'default',

@@ -15,7 +15,7 @@
             record: 'namespace:efficiency_cpu:ratio',
             expr: |||
               sum by (%(clusterLabel)s, namespace) (
-                rate(container_cpu_usage_seconds_total{container!="",image!=""}[5m])
+                rate(container_cpu_usage_seconds_total{%(cadvisorSelector)s, container!="", image!=""}[5m])
               )
               /
               sum by (%(clusterLabel)s, namespace) (
@@ -27,7 +27,7 @@
             record: 'namespace:efficiency_ram:ratio',
             expr: |||
               sum by (%(clusterLabel)s, namespace) (
-                container_memory_working_set_bytes{container!="",image!=""}
+                container_memory_working_set_bytes{%(cadvisorSelector)s, container!="", image!=""}
               )
               /
               sum by (%(clusterLabel)s, namespace) (
@@ -61,7 +61,7 @@
             record: 'workload:efficiency_cpu:ratio',
             expr: |||
               sum by (%(clusterLabel)s, namespace, workload_type, workload) (
-                rate(container_cpu_usage_seconds_total{container!="",image!=""}[5m])
+                rate(container_cpu_usage_seconds_total{%(cadvisorSelector)s, container!="", image!=""}[5m])
                 * on(%(clusterLabel)s, namespace, pod) group_left(workload_type, workload)
                 max by (%(clusterLabel)s, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
               )
@@ -77,7 +77,7 @@
             record: 'workload:efficiency_ram:ratio',
             expr: |||
               sum by (%(clusterLabel)s, namespace, workload_type, workload) (
-                container_memory_working_set_bytes{container!="",image!=""}
+                container_memory_working_set_bytes{%(cadvisorSelector)s, container!="", image!=""}
                 * on(%(clusterLabel)s, namespace, pod) group_left(workload_type, workload)
                 max by (%(clusterLabel)s, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
               )
