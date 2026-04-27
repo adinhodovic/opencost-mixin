@@ -1,9 +1,22 @@
 // Efficiency recording rules mirror OpenCost's native CPUEfficiency / RAMEfficiency /
-// TotalEfficiency calculation (see core/pkg/opencost/allocation.go — usage / allocation,
-// cost-weighted combination — https://www.opencost.io/docs/specification#efficiency).
+// TotalEfficiency calculation. The numerator metrics (rate of
+// container_cpu_usage_seconds_total, container_memory_working_set_bytes) and the
+// container_name!="POD"/container!="POD" filter are taken from the same Prometheus
+// queries OpenCost itself runs against cAdvisor:
+//   QueryCPUUsageAvg / QueryRAMUsageAvg in
+//   https://github.com/opencost/opencost/blob/develop/modules/prometheus-source/pkg/prom/metricsquerier.go
+// The Allocation efficiency methods that combine these into the UI numbers:
+//   CPUEfficiency / RAMEfficiency / TotalEfficiency in
+//   https://github.com/opencost/opencost/blob/develop/core/pkg/opencost/allocation.go
+// Spec: https://www.opencost.io/docs/specification#efficiency
+//
 // The allocation series (container_cpu_allocation, container_memory_allocation_bytes)
 // are OpenCost's internal max(request, usage) × pod-uptime values, so using them
 // as the denominator keeps dashboard numbers within ~2% of the OpenCost UI.
+//
+// rate(...[5m]) window: the rule group fires every 5m, so a 5m rate produces one
+// fresh sample per evaluation; with kubelet scraping at 15–30s this gives
+// ~10–20 samples per rate (well above Prometheus's "≥4 samples" rule of thumb).
 {
   prometheusRules+:: {
     groups+: [
@@ -15,7 +28,7 @@
             record: 'namespace:efficiency_cpu:ratio',
             expr: |||
               sum by (%(clusterLabel)s, namespace) (
-                rate(container_cpu_usage_seconds_total{%(cadvisorSelector)s, container!="", image!=""}[5m])
+                rate(container_cpu_usage_seconds_total{%(cadvisorSelector)s, container!="", container_name!="POD", container!="POD"}[5m])
               )
               /
               sum by (%(clusterLabel)s, namespace) (
@@ -27,7 +40,7 @@
             record: 'namespace:efficiency_ram:ratio',
             expr: |||
               sum by (%(clusterLabel)s, namespace) (
-                container_memory_working_set_bytes{%(cadvisorSelector)s, container!="", image!=""}
+                container_memory_working_set_bytes{%(cadvisorSelector)s, container!="", container_name!="POD", container!="POD"}
               )
               /
               sum by (%(clusterLabel)s, namespace) (
@@ -61,7 +74,7 @@
             record: 'workload:efficiency_cpu:ratio',
             expr: |||
               sum by (%(clusterLabel)s, namespace, workload_type, workload) (
-                rate(container_cpu_usage_seconds_total{%(cadvisorSelector)s, container!="", image!=""}[5m])
+                rate(container_cpu_usage_seconds_total{%(cadvisorSelector)s, container!="", container_name!="POD", container!="POD"}[5m])
                 * on(%(clusterLabel)s, namespace, pod) group_left(workload_type, workload)
                 max by (%(clusterLabel)s, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
               )
@@ -77,7 +90,7 @@
             record: 'workload:efficiency_ram:ratio',
             expr: |||
               sum by (%(clusterLabel)s, namespace, workload_type, workload) (
-                container_memory_working_set_bytes{%(cadvisorSelector)s, container!="", image!=""}
+                container_memory_working_set_bytes{%(cadvisorSelector)s, container!="", container_name!="POD", container!="POD"}
                 * on(%(clusterLabel)s, namespace, pod) group_left(workload_type, workload)
                 max by (%(clusterLabel)s, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
               )
