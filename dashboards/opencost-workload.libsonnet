@@ -175,9 +175,11 @@ local tbQueryOptions = tablePanel.queryOptions;
           ) by (pod)
         ||| % ($._config { workloadFilters: workloadFilters }),
 
-        // Efficiency queries — mirror OpenCost's native CPUEfficiency, RAMEfficiency and
-        // TotalEfficiency calculation (see https://www.opencost.io/docs/specification#efficiency).
-        // Backed by the workload:efficiency_*:ratio recording rules shipped in this mixin.
+        // Allocation efficiency queries. OpenCost does not export native efficiency
+        // metrics, so the recording rules use OpenCost allocation metrics as
+        // denominators. This is close to the OpenCost model, but not exact UI/API
+        // parity because native CPUEfficiency/RAMEfficiency use request averages.
+        // Backed by the workload:efficiency_*:ratio recording rules shipped here.
         workloadCpuEfficiency: 'workload:efficiency_cpu:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
         workloadRamEfficiency: 'workload:efficiency_ram:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
         workloadTotalEfficiency: 'workload:efficiency_total:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
@@ -460,7 +462,7 @@ local tbQueryOptions = tablePanel.queryOptions;
             queries.workloadCpuEfficiency,
             graphMode='none',
             decimals=2,
-            description='CPU usage / CPU allocation for the selected workload(s). Values well below 1.0 indicate containers allocated more CPU than they are actually using. Mirrors CPUEfficiency from the OpenCost UI.',
+            description='CPU usage / OpenCost-exported CPU allocation for the selected workload(s). Values well below 1.0 indicate allocated CPU that is not being actively used. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.',
           ),
 
         ramEfficiencyStat:
@@ -470,7 +472,7 @@ local tbQueryOptions = tablePanel.queryOptions;
             queries.workloadRamEfficiency,
             graphMode='none',
             decimals=2,
-            description='Working-set RAM / RAM allocation for the selected workload(s). Mirrors RAMEfficiency from the OpenCost UI.',
+            description='Working-set RAM / OpenCost-exported RAM allocation for the selected workload(s). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.',
           ),
 
         totalEfficiencyStat:
@@ -480,7 +482,7 @@ local tbQueryOptions = tablePanel.queryOptions;
             queries.workloadTotalEfficiency,
             graphMode='none',
             decimals=2,
-            description='Workload total (cost-weighted) efficiency combining CPU and RAM. Mirrors TotalEfficiency from the OpenCost UI.',
+            description='Workload total allocation efficiency combining CPU and RAM with CPU/RAM cost weights. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.',
           ),
 
         cpuEfficiencyTimeSeries:
@@ -494,7 +496,7 @@ local tbQueryOptions = tablePanel.queryOptions;
                 interval: $._config.dashboardMinInterval,
               },
             ],
-            description='CPU efficiency over time for the selected workload(s).',
+            description='CPU allocation efficiency over time for the selected workload(s).',
           ),
 
         ramEfficiencyTimeSeries:
@@ -508,7 +510,7 @@ local tbQueryOptions = tablePanel.queryOptions;
                 interval: $._config.dashboardMinInterval,
               },
             ],
-            description='RAM efficiency over time for the selected workload(s).',
+            description='RAM allocation efficiency over time for the selected workload(s).',
           ),
       };
 

@@ -671,7 +671,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "CPU usage / CPU allocation for the selected workload(s). Values well below 1.0 indicate containers allocated more CPU than they are actually using. Mirrors CPUEfficiency from the OpenCost UI.",
+         "description": "CPU usage / OpenCost-exported CPU allocation for the selected workload(s). Values well below 1.0 indicate allocated CPU that is not being actively used. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -719,7 +719,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Working-set RAM / RAM allocation for the selected workload(s). Mirrors RAMEfficiency from the OpenCost UI.",
+         "description": "Working-set RAM / OpenCost-exported RAM allocation for the selected workload(s). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -767,7 +767,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Workload total (cost-weighted) efficiency combining CPU and RAM. Mirrors TotalEfficiency from the OpenCost UI.",
+         "description": "Workload total allocation efficiency combining CPU and RAM with CPU/RAM cost weights. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -815,7 +815,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "CPU efficiency over time for the selected workload(s).",
+         "description": "CPU allocation efficiency over time for the selected workload(s).",
          "fieldConfig": {
             "defaults": {
                "custom": {
@@ -870,7 +870,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "RAM efficiency over time for the selected workload(s).",
+         "description": "RAM allocation efficiency over time for the selected workload(s).",
          "fieldConfig": {
             "defaults": {
                "custom": {

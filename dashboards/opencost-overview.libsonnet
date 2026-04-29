@@ -350,11 +350,11 @@ local tbOverride = tbStandardOptions.override;
           ) by (persistentvolume)
         ||| % defaultFilters,
 
-        // Efficiency queries — mirror OpenCost's native CPUEfficiency, RAMEfficiency
-        // and TotalEfficiency (cost-weighted) calculation. See
-        // https://www.opencost.io/docs/specification#efficiency and
-        // https://github.com/opencost/opencost/blob/develop/core/pkg/opencost/allocation.go.
-        // Backed by the opencost.rules.efficiency recording rules shipped in this mixin.
+        // Allocation efficiency queries. OpenCost does not export native efficiency
+        // metrics, so the recording rules use OpenCost allocation metrics as
+        // denominators. This is close to the OpenCost model, but not exact UI/API
+        // parity because native CPUEfficiency/RAMEfficiency use request averages.
+        // Backed by the opencost.rules.efficiency recording rules shipped here.
         clusterCpuEfficiency: |||
           sum(namespace:opencost_cpu_cost:sum{%(cluster)s} * namespace:efficiency_cpu:ratio{%(cluster)s})
           /
@@ -778,7 +778,7 @@ local tbOverride = tbStandardOptions.override;
             queries.clusterCpuEfficiency,
             graphMode='none',
             decimals=2,
-            description='Cost-weighted average CPU efficiency across all namespaces in the cluster. Efficiency = CPU usage / CPU allocation. Values closer to 1.0 indicate that requested CPU is being actively consumed; values well below 1.0 indicate over-requested workloads that can be rightsized. Mirrors the CPUEfficiency metric from the OpenCost UI.',
+            description='Cost-weighted average CPU allocation efficiency across all namespaces in the cluster. This is CPU usage / OpenCost-exported CPU allocation. Values well below 1.0 indicate allocated CPU that is not being actively used. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.',
           ),
 
         ramEfficiencyStat:
@@ -788,7 +788,7 @@ local tbOverride = tbStandardOptions.override;
             queries.clusterRamEfficiency,
             graphMode='none',
             decimals=2,
-            description='Cost-weighted average memory efficiency across all namespaces in the cluster. Efficiency = working-set RAM / RAM allocation. Mirrors the RAMEfficiency metric from the OpenCost UI.',
+            description='Cost-weighted average RAM allocation efficiency across all namespaces in the cluster. This is working-set RAM / OpenCost-exported RAM allocation. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.',
           ),
 
         totalEfficiencyStat:
@@ -798,7 +798,7 @@ local tbOverride = tbStandardOptions.override;
             queries.clusterTotalEfficiency,
             graphMode='none',
             decimals=2,
-            description='Cluster total (cost-weighted) efficiency combining CPU and RAM: (CPUCost × CPUEff + RAMCost × RAMEff) / (CPUCost + RAMCost). Mirrors the TotalEfficiency metric from the OpenCost UI.',
+            description='Cluster total allocation efficiency combining CPU and RAM: (CPUCost × CPUAllocationEfficiency + RAMCost × RAMAllocationEfficiency) / (CPUCost + RAMCost). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.',
           ),
 
         namespaceCpuEfficiencyTimeSeries:
@@ -812,7 +812,7 @@ local tbOverride = tbStandardOptions.override;
                 interval: $._config.dashboardMinInterval,
               },
             ],
-            description='Top 10 namespaces by CPU efficiency. Low values indicate namespaces that have been allocated more CPU than they are actually using.',
+            description='Top 10 namespaces by CPU allocation efficiency. Low values indicate namespaces that have been allocated more CPU than they are actively using.',
           ),
 
         namespaceRamEfficiencyTimeSeries:
@@ -826,7 +826,7 @@ local tbOverride = tbStandardOptions.override;
                 interval: $._config.dashboardMinInterval,
               },
             ],
-            description='Top 10 namespaces by RAM efficiency. Low values indicate namespaces whose containers have memory requests well above their working-set usage.',
+            description='Top 10 namespaces by RAM allocation efficiency. Low values indicate namespaces whose allocated memory is above their working-set usage.',
           ),
       };
 

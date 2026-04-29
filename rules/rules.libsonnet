@@ -1,18 +1,21 @@
-// Efficiency recording rules mirror OpenCost's native CPUEfficiency / RAMEfficiency /
-// TotalEfficiency calculation. The numerator metrics (rate of
-// container_cpu_usage_seconds_total, container_memory_working_set_bytes) and the
-// container_name!="POD"/container!="POD" filter are taken from the same Prometheus
-// queries OpenCost itself runs against cAdvisor:
+// Efficiency recording rules approximate OpenCost efficiency from exported
+// Prometheus metrics. OpenCost does not export CPUEfficiency / RAMEfficiency /
+// TotalEfficiency directly, so these rules use OpenCost allocation metrics as
+// denominators. The numerator metrics (rate of container_cpu_usage_seconds_total,
+// container_memory_working_set_bytes) and the container_name!="POD"/container!="POD"
+// filter are taken from the same Prometheus queries OpenCost itself runs against
+// cAdvisor:
 //   QueryCPUUsageAvg / QueryRAMUsageAvg in
 //   https://github.com/opencost/opencost/blob/develop/modules/prometheus-source/pkg/prom/metricsquerier.go
-// The Allocation efficiency methods that combine these into the UI numbers:
+// OpenCost's native API/UI efficiency methods use request-average denominators:
 //   CPUEfficiency / RAMEfficiency / TotalEfficiency in
 //   https://github.com/opencost/opencost/blob/develop/core/pkg/opencost/allocation.go
 // Spec: https://www.opencost.io/docs/specification#efficiency
 //
 // The allocation series (container_cpu_allocation, container_memory_allocation_bytes)
-// are OpenCost's internal max(request, usage) × pod-uptime values, so using them
-// as the denominator keeps dashboard numbers within ~2% of the OpenCost UI.
+// are OpenCost's own exported allocation model (roughly max(request, usage)), so
+// these rules report "usage / OpenCost allocation". This is allocation efficiency,
+// not byte-for-byte parity with the OpenCost UI/API's request-based efficiency.
 //
 // rate(...[5m]) window: the rule group fires every 5m, so a 5m rate produces one
 // fresh sample per evaluation; with kubelet scraping at 15–30s this gives

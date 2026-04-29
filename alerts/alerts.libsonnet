@@ -161,10 +161,10 @@
         name: 'opencost-efficiency',
         rules: [
           {
-            // Fires when a namespace's cost-weighted efficiency stays below the
-            // configured threshold over 7d. Mirrors OpenCost's native formula
-            // (see core/pkg/opencost/allocation.go — CPUEfficiency, RAMEfficiency,
-            // TotalEfficiency). Spec: https://www.opencost.io/docs/specification#efficiency
+            // Fires when a namespace's cost-weighted allocation efficiency stays
+            // below the configured threshold over 7d. This uses OpenCost-exported
+            // allocation metrics as the denominator; OpenCost UI/API efficiency
+            // uses request-average denominators.
             alert: 'OpenCostLowEfficiencyNamespace',
             expr: |||
               avg_over_time(namespace:efficiency_total:ratio[7d]) < %(minEfficiencyThreshold)s
@@ -175,7 +175,7 @@
             'for': '1h',
             annotations: {
               summary: 'Namespace {{ $labels.namespace }} on {{ $labels.%(clusterLabel)s }} is chronically under-utilizing its requests' % $._config,
-              description: 'Total CPU+RAM cost-weighted efficiency for namespace {{ $labels.namespace }} on cluster {{ $labels.%(clusterLabel)s }} has averaged {{ $value | humanizePercentage }} over the last 7 days. Consider rightsizing container requests. Formula mirrors OpenCost allocation.go (CPUEfficiency, RAMEfficiency, TotalEfficiency) — spec at https://www.opencost.io/docs/specification#efficiency.' % $._config,
+              description: 'Total CPU+RAM cost-weighted allocation efficiency for namespace {{ $labels.namespace }} on cluster {{ $labels.%(clusterLabel)s }} has averaged {{ $value | humanizePercentage }} over the last 7 days. This is usage divided by OpenCost-exported allocation, not exact OpenCost UI/API request-based efficiency. Consider rightsizing container requests.' % $._config,
               dashboard_url: $._config.dashboardUrls['opencost-namespace'] + clusterVariableQueryString,
             },
           },

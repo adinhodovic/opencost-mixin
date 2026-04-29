@@ -683,7 +683,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "CPU usage / CPU allocation for the selected namespace. Values well below 1.0 indicate containers that have been allocated more CPU than they are actually using. Mirrors the CPUEfficiency metric from the OpenCost UI.",
+         "description": "CPU usage / OpenCost-exported CPU allocation for the selected namespace. Values well below 1.0 indicate allocated CPU that is not being actively used. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -731,7 +731,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Working-set RAM / RAM allocation for the selected namespace. Mirrors the RAMEfficiency metric from the OpenCost UI.",
+         "description": "Working-set RAM / OpenCost-exported RAM allocation for the selected namespace. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -779,7 +779,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Namespace total (cost-weighted) efficiency combining CPU and RAM. Mirrors TotalEfficiency from the OpenCost UI.",
+         "description": "Namespace total allocation efficiency combining CPU and RAM with CPU/RAM cost weights. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.",
          "fieldConfig": {
             "defaults": {
                "decimals": 2,
@@ -827,7 +827,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Top 10 workloads inside the selected namespace by CPU efficiency. Low values indicate workloads that have been allocated more CPU than they are actually using.",
+         "description": "Top 10 workloads inside the selected namespace by CPU allocation efficiency. Low values indicate workloads that have been allocated more CPU than they are actively using.",
          "fieldConfig": {
             "defaults": {
                "custom": {
@@ -882,7 +882,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Top 10 workloads inside the selected namespace by RAM efficiency.",
+         "description": "Top 10 workloads inside the selected namespace by RAM allocation efficiency.",
          "fieldConfig": {
             "defaults": {
                "custom": {

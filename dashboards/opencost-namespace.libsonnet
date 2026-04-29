@@ -304,9 +304,11 @@ local tbOverride = tbStandardOptions.override;
         pvMonthlyCostByPv: std.strReplace(queries.monthlyPVCost, '* 730', 'by (persistentvolume) * 730'),
         pvcMonthlyCostByClaim: std.strReplace(queries.monthlyPVCost, '* 730', 'by (persistentvolumeclaim) * 730'),
 
-        // Efficiency queries — mirror OpenCost's native CPUEfficiency, RAMEfficiency and
-        // TotalEfficiency calculation (see https://www.opencost.io/docs/specification#efficiency).
-        // Backed by the opencost.rules.efficiency recording rules shipped in this mixin.
+        // Allocation efficiency queries. OpenCost does not export native efficiency
+        // metrics, so the recording rules use OpenCost allocation metrics as
+        // denominators. This is close to the OpenCost model, but not exact UI/API
+        // parity because native CPUEfficiency/RAMEfficiency use request averages.
+        // Backed by the opencost.rules.efficiency recording rules shipped here.
         // The recording rules aggregate by (cluster, namespace) so the job label is not
         // present; queries below select by cluster+namespace only.
         namespaceCpuEfficiency: 'namespace:efficiency_cpu:ratio{%(cluster)s, %(namespace)s}' % defaultFilters,
@@ -706,7 +708,7 @@ local tbOverride = tbStandardOptions.override;
             queries.namespaceCpuEfficiency,
             graphMode='none',
             decimals=2,
-            description='CPU usage / CPU allocation for the selected namespace. Values well below 1.0 indicate containers that have been allocated more CPU than they are actually using. Mirrors the CPUEfficiency metric from the OpenCost UI.',
+            description='CPU usage / OpenCost-exported CPU allocation for the selected namespace. Values well below 1.0 indicate allocated CPU that is not being actively used. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.',
           ),
 
         ramEfficiencyStat:
@@ -716,7 +718,7 @@ local tbOverride = tbStandardOptions.override;
             queries.namespaceRamEfficiency,
             graphMode='none',
             decimals=2,
-            description='Working-set RAM / RAM allocation for the selected namespace. Mirrors the RAMEfficiency metric from the OpenCost UI.',
+            description='Working-set RAM / OpenCost-exported RAM allocation for the selected namespace. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.',
           ),
 
         totalEfficiencyStat:
@@ -726,7 +728,7 @@ local tbOverride = tbStandardOptions.override;
             queries.namespaceTotalEfficiency,
             graphMode='none',
             decimals=2,
-            description='Namespace total (cost-weighted) efficiency combining CPU and RAM. Mirrors TotalEfficiency from the OpenCost UI.',
+            description='Namespace total allocation efficiency combining CPU and RAM with CPU/RAM cost weights. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.',
           ),
 
         workloadCpuEfficiencyTimeSeries:
@@ -740,7 +742,7 @@ local tbOverride = tbStandardOptions.override;
                 interval: $._config.dashboardMinInterval,
               },
             ],
-            description='Top 10 workloads inside the selected namespace by CPU efficiency. Low values indicate workloads that have been allocated more CPU than they are actually using.',
+            description='Top 10 workloads inside the selected namespace by CPU allocation efficiency. Low values indicate workloads that have been allocated more CPU than they are actively using.',
           ),
 
         workloadRamEfficiencyTimeSeries:
@@ -754,7 +756,7 @@ local tbOverride = tbStandardOptions.override;
                 interval: $._config.dashboardMinInterval,
               },
             ],
-            description='Top 10 workloads inside the selected namespace by RAM efficiency.',
+            description='Top 10 workloads inside the selected namespace by RAM allocation efficiency.',
           ),
       };
 
