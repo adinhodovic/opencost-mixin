@@ -18,6 +18,61 @@
 // fresh sample per evaluation; with kubelet scraping at 15–30s this gives
 // ~10–20 samples per rate (well above Prometheus's "≥4 samples" rule of thumb).
 {
+  local clusterNamespace = '%(clusterLabel)s, namespace' % $._config,
+  local clusterNamespacePod = '%(clusterLabel)s, namespace, pod' % $._config,
+  local workloadLabels = '%(clusterLabel)s, namespace, workload_type, workload' % $._config,
+  local cadvisorContainerSelector = '%(cadvisorSelector)s, container!="", container_name!="POD", container!="POD"' % $._config,
+  local workloadOwner = |||
+    max by (%(clusterNamespacePod)s, workload_type, workload) (
+      namespace_workload_pod:kube_pod_owner:relabel
+    )
+  ||| % { clusterNamespacePod: clusterNamespacePod },
+  local workloadOwnerFraction = |||
+    (
+      %(workloadOwner)s
+      /
+      on(%(clusterNamespacePod)s) group_left()
+      count by (%(clusterNamespacePod)s) (
+        %(workloadOwner)s
+      )
+    )
+  ||| % {
+    clusterNamespacePod: clusterNamespacePod,
+    workloadOwner: workloadOwner,
+  },
+  local workloadEfficiency(metricExpr) = |||
+    sum by (%(workloadLabels)s) (
+      %(workloadOwnerFraction)s
+      * on(%(clusterNamespacePod)s) group_left()
+      sum by (%(clusterNamespacePod)s) (
+        %(metricExpr)s
+      )
+    )
+  ||| % {
+    clusterNamespacePod: clusterNamespacePod,
+    metricExpr: metricExpr,
+    workloadLabels: workloadLabels,
+    workloadOwnerFraction: workloadOwnerFraction,
+  },
+  local costWeightedEfficiencyTotal(scope, labels) = |||
+    (
+      %(scope)s:opencost_cpu_cost:sum
+      * on(%(labels)s)
+      %(scope)s:efficiency_cpu:ratio
+      +
+      %(scope)s:opencost_ram_cost:sum
+      * on(%(labels)s)
+      %(scope)s:efficiency_ram:ratio
+    )
+    /
+    on(%(labels)s)
+    (
+      %(scope)s:opencost_cpu_cost:sum + %(scope)s:opencost_ram_cost:sum
+    )
+  ||| % {
+    labels: labels,
+    scope: scope,
+  },
   prometheusRules+:: {
     groups+: [
       {
@@ -27,94 +82,70 @@
           {
             record: 'namespace:efficiency_cpu:ratio',
             expr: |||
-              sum by (%(clusterLabel)s, namespace) (
-                rate(container_cpu_usage_seconds_total{%(cadvisorSelector)s, container!="", container_name!="POD", container!="POD"}[5m])
+              sum by (%(clusterNamespace)s) (
+                rate(container_cpu_usage_seconds_total{%(cadvisorContainerSelector)s}[5m])
               )
               /
-              sum by (%(clusterLabel)s, namespace) (
+              sum by (%(clusterNamespace)s) (
                 container_cpu_allocation{%(openCostSelector)s}
               )
-            ||| % $._config,
+            ||| % ($._config {
+                     cadvisorContainerSelector: cadvisorContainerSelector,
+                     clusterNamespace: clusterNamespace,
+                   }),
           },
           {
             record: 'namespace:efficiency_ram:ratio',
             expr: |||
-              sum by (%(clusterLabel)s, namespace) (
-                container_memory_working_set_bytes{%(cadvisorSelector)s, container!="", container_name!="POD", container!="POD"}
+              sum by (%(clusterNamespace)s) (
+                container_memory_working_set_bytes{%(cadvisorContainerSelector)s}
               )
               /
-              sum by (%(clusterLabel)s, namespace) (
+              sum by (%(clusterNamespace)s) (
                 container_memory_allocation_bytes{%(openCostSelector)s}
               )
-            ||| % $._config,
+            ||| % ($._config {
+                     cadvisorContainerSelector: cadvisorContainerSelector,
+                     clusterNamespace: clusterNamespace,
+                   }),
           },
           {
             record: 'namespace:opencost_cpu_cost:sum',
-            expr: 'sum by (%(clusterLabel)s, namespace) (workload:opencost_cpu_cost:sum)' % $._config,
+            expr: 'sum by (%s) (workload:opencost_cpu_cost:sum)' % clusterNamespace,
           },
           {
             record: 'namespace:opencost_ram_cost:sum',
-            expr: 'sum by (%(clusterLabel)s, namespace) (workload:opencost_ram_cost:sum)' % $._config,
-          },
-          {
-            record: 'namespace:efficiency_total:ratio',
-            expr: |||
-              (
-                namespace:opencost_cpu_cost:sum * namespace:efficiency_cpu:ratio
-                +
-                namespace:opencost_ram_cost:sum * namespace:efficiency_ram:ratio
-              )
-              /
-              (
-                namespace:opencost_cpu_cost:sum + namespace:opencost_ram_cost:sum
-              )
-            |||,
+            expr: 'sum by (%s) (workload:opencost_ram_cost:sum)' % clusterNamespace,
           },
           {
             record: 'workload:efficiency_cpu:ratio',
             expr: |||
-              sum by (%(clusterLabel)s, namespace, workload_type, workload) (
-                rate(container_cpu_usage_seconds_total{%(cadvisorSelector)s, container!="", container_name!="POD", container!="POD"}[5m])
-                * on(%(clusterLabel)s, namespace, pod) group_left(workload_type, workload)
-                max by (%(clusterLabel)s, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
-              )
+              %(workloadCpuUsage)s
               /
-              sum by (%(clusterLabel)s, namespace, workload_type, workload) (
-                container_cpu_allocation{%(openCostSelector)s}
-                * on(%(clusterLabel)s, namespace, pod) group_left(workload_type, workload)
-                max by (%(clusterLabel)s, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
-              )
-            ||| % $._config,
+              %(workloadCpuAllocation)s
+            ||| % {
+              workloadCpuAllocation: workloadEfficiency('container_cpu_allocation{%(openCostSelector)s}' % $._config),
+              workloadCpuUsage: workloadEfficiency('rate(container_cpu_usage_seconds_total{%(cadvisorContainerSelector)s}[5m])' % { cadvisorContainerSelector: cadvisorContainerSelector }),
+            },
           },
           {
             record: 'workload:efficiency_ram:ratio',
             expr: |||
-              sum by (%(clusterLabel)s, namespace, workload_type, workload) (
-                container_memory_working_set_bytes{%(cadvisorSelector)s, container!="", container_name!="POD", container!="POD"}
-                * on(%(clusterLabel)s, namespace, pod) group_left(workload_type, workload)
-                max by (%(clusterLabel)s, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
-              )
+              %(workloadRamUsage)s
               /
-              sum by (%(clusterLabel)s, namespace, workload_type, workload) (
-                container_memory_allocation_bytes{%(openCostSelector)s}
-                * on(%(clusterLabel)s, namespace, pod) group_left(workload_type, workload)
-                max by (%(clusterLabel)s, namespace, pod, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)
-              )
-            ||| % $._config,
+              %(workloadRamAllocation)s
+            ||| % {
+              workloadRamAllocation: workloadEfficiency('container_memory_allocation_bytes{%(openCostSelector)s}' % $._config),
+              workloadRamUsage: workloadEfficiency('container_memory_working_set_bytes{%(cadvisorContainerSelector)s}' % { cadvisorContainerSelector: cadvisorContainerSelector }),
+            },
+          },
+          {
+            record: 'namespace:efficiency_total:ratio',
+            expr: costWeightedEfficiencyTotal('namespace', clusterNamespace),
           },
           {
             record: 'workload:efficiency_total:ratio',
-            expr: |||
-              (
-                workload:opencost_cpu_cost:sum * workload:efficiency_cpu:ratio
-                +
-                workload:opencost_ram_cost:sum * workload:efficiency_ram:ratio
-              )
-              /
-              (
-                workload:opencost_cpu_cost:sum + workload:opencost_ram_cost:sum
-              )
-            |||,
+            expr: costWeightedEfficiencyTotal('workload', workloadLabels),
           },
         ],
       },

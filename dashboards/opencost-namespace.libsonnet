@@ -313,17 +313,6 @@ local tbOverride = tbStandardOptions.override;
         namespaceRamEfficiency: 'namespace:efficiency_ram:ratio{%(cluster)s, %(namespace)s}' % defaultFilters,
         namespaceTotalEfficiency: 'namespace:efficiency_total:ratio{%(cluster)s, %(namespace)s}' % defaultFilters,
 
-        namespaceMonthlyWaste: |||
-          (1 - namespace:efficiency_total:ratio{%(cluster)s, %(namespace)s})
-          *
-          (
-            namespace:opencost_cpu_cost:sum{%(cluster)s, %(namespace)s}
-            +
-            namespace:opencost_ram_cost:sum{%(cluster)s, %(namespace)s}
-          )
-          * 730
-        ||| % defaultFilters,
-
         workloadCpuEfficiencyTopN: |||
           topk(10,
             workload:efficiency_cpu:ratio{%(cluster)s, %(namespace)s}
@@ -740,16 +729,6 @@ local tbOverride = tbStandardOptions.override;
             description='Namespace total (cost-weighted) efficiency combining CPU and RAM. Mirrors TotalEfficiency from the OpenCost UI.',
           ),
 
-        monthlyWasteStat:
-          dashboards.statPanel(
-            'Monthly Waste',
-            'currencyUSD',
-            queries.namespaceMonthlyWaste,
-            graphMode='none',
-            decimals=2,
-            description='Projected monthly spend in this namespace that is currently idle (allocated but unused): (1 - Total Efficiency) × (CPU Cost + RAM Cost) × 730h.',
-          ),
-
         workloadCpuEfficiencyTimeSeries:
           dashboards.timeSeriesPanel(
             'CPU Efficiency by Workload (Top 10)',
@@ -836,9 +815,8 @@ local tbOverride = tbStandardOptions.override;
             panels.cpuEfficiencyStat,
             panels.ramEfficiencyStat,
             panels.totalEfficiencyStat,
-            panels.monthlyWasteStat,
           ],
-          panelWidth=6,
+          panelWidth=8,
           panelHeight=3,
           startY=24
         ) +

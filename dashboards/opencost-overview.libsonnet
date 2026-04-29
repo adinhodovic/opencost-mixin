@@ -381,32 +381,6 @@ local tbOverride = tbStandardOptions.override;
           )
         ||| % defaultFilters,
 
-        clusterMonthlyWaste: |||
-          (
-            1 -
-            (
-              (
-                sum(namespace:opencost_cpu_cost:sum{%(cluster)s} * namespace:efficiency_cpu:ratio{%(cluster)s})
-                +
-                sum(namespace:opencost_ram_cost:sum{%(cluster)s} * namespace:efficiency_ram:ratio{%(cluster)s})
-              )
-              /
-              (
-                sum(namespace:opencost_cpu_cost:sum{%(cluster)s})
-                +
-                sum(namespace:opencost_ram_cost:sum{%(cluster)s})
-              )
-            )
-          )
-          *
-          (
-            sum(namespace:opencost_cpu_cost:sum{%(cluster)s})
-            +
-            sum(namespace:opencost_ram_cost:sum{%(cluster)s})
-          )
-          * 730
-        ||| % defaultFilters,
-
         namespaceCpuEfficiencyTopN: |||
           topk(10,
             namespace:efficiency_cpu:ratio{%(cluster)s}
@@ -827,16 +801,6 @@ local tbOverride = tbStandardOptions.override;
             description='Cluster total (cost-weighted) efficiency combining CPU and RAM: (CPUCost × CPUEff + RAMCost × RAMEff) / (CPUCost + RAMCost). Mirrors the TotalEfficiency metric from the OpenCost UI.',
           ),
 
-        monthlyWasteStat:
-          dashboards.statPanel(
-            'Monthly Waste',
-            'currencyUSD',
-            queries.clusterMonthlyWaste,
-            graphMode='none',
-            decimals=2,
-            description='Projected monthly spend that is currently idle (allocated but unused): (1 - Total Efficiency) × (CPU Cost + RAM Cost) × 730h. Represents the theoretical savings if all requests were perfectly sized to actual usage.',
-          ),
-
         namespaceCpuEfficiencyTimeSeries:
           dashboards.timeSeriesPanel(
             'CPU Efficiency by Namespace (Top 10)',
@@ -927,9 +891,8 @@ local tbOverride = tbStandardOptions.override;
             panels.cpuEfficiencyStat,
             panels.ramEfficiencyStat,
             panels.totalEfficiencyStat,
-            panels.monthlyWasteStat,
           ],
-          panelWidth=6,
+          panelWidth=8,
           panelHeight=3,
           startY=21
         ) +

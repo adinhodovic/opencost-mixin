@@ -182,17 +182,6 @@ local tbQueryOptions = tablePanel.queryOptions;
         workloadRamEfficiency: 'workload:efficiency_ram:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
         workloadTotalEfficiency: 'workload:efficiency_total:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
 
-        workloadMonthlyWaste: |||
-          (1 - workload:efficiency_total:ratio{%(withNamespaceWorkload)s})
-          *
-          (
-            workload:opencost_cpu_cost:sum{%(withNamespaceWorkload)s}
-            +
-            workload:opencost_ram_cost:sum{%(withNamespaceWorkload)s}
-          )
-          * 730
-        ||| % defaultFilters,
-
         workloadCpuEfficiencyTimeSeriesQuery: 'workload:efficiency_cpu:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
         workloadRamEfficiencyTimeSeriesQuery: 'workload:efficiency_ram:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
       };
@@ -494,16 +483,6 @@ local tbQueryOptions = tablePanel.queryOptions;
             description='Workload total (cost-weighted) efficiency combining CPU and RAM. Mirrors TotalEfficiency from the OpenCost UI.',
           ),
 
-        monthlyWasteStat:
-          dashboards.statPanel(
-            'Monthly Waste',
-            'currencyUSD',
-            queries.workloadMonthlyWaste,
-            graphMode='none',
-            decimals=2,
-            description='Projected monthly spend for the selected workload(s) that is currently idle (allocated but unused): (1 - Total Efficiency) × (CPU Cost + RAM Cost) × 730h.',
-          ),
-
         cpuEfficiencyTimeSeries:
           dashboards.timeSeriesPanel(
             'CPU Efficiency',
@@ -585,9 +564,8 @@ local tbQueryOptions = tablePanel.queryOptions;
             panels.cpuEfficiencyStat,
             panels.ramEfficiencyStat,
             panels.totalEfficiencyStat,
-            panels.monthlyWasteStat,
           ],
-          panelWidth=6,
+          panelWidth=8,
           panelHeight=3,
           startY=26
         ) +
