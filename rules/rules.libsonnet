@@ -22,37 +22,20 @@
   local clusterNamespacePod = '%(clusterLabel)s, namespace, pod' % $._config,
   local workloadLabels = '%(clusterLabel)s, namespace, workload_type, workload' % $._config,
   local cadvisorContainerSelector = '%(cadvisorSelector)s, container!="", container_name!="POD", container!="POD"' % $._config,
-  local workloadOwner = |||
-    max by (%(clusterNamespacePod)s, workload_type, workload) (
-      namespace_workload_pod:kube_pod_owner:relabel
-    )
-  ||| % { clusterNamespacePod: clusterNamespacePod },
-  local workloadOwnerFraction = |||
-    (
-      %(workloadOwner)s
-      /
-      on(%(clusterNamespacePod)s) group_left()
-      count by (%(clusterNamespacePod)s) (
-        %(workloadOwner)s
-      )
-    )
-  ||| % {
-    clusterNamespacePod: clusterNamespacePod,
-    workloadOwner: workloadOwner,
-  },
+  local workloadOwner = 'max by (%s, workload_type, workload) (namespace_workload_pod:kube_pod_owner:relabel)' % clusterNamespacePod,
   local workloadEfficiency(metricExpr) = |||
     sum by (%(workloadLabels)s) (
-      %(workloadOwnerFraction)s
-      * on(%(clusterNamespacePod)s) group_left()
       sum by (%(clusterNamespacePod)s) (
         %(metricExpr)s
       )
+      * on(%(clusterNamespacePod)s) group_left(workload_type, workload)
+      %(workloadOwner)s
     )
   ||| % {
     clusterNamespacePod: clusterNamespacePod,
     metricExpr: metricExpr,
     workloadLabels: workloadLabels,
-    workloadOwnerFraction: workloadOwnerFraction,
+    workloadOwner: workloadOwner,
   },
   local costWeightedEfficiencyTotal(scope, labels) = |||
     (
