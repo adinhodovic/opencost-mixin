@@ -381,14 +381,14 @@ local tbOverride = tbStandardOptions.override;
           )
         ||| % defaultFilters,
 
-        namespaceCpuEfficiencyTopN: |||
-          topk(10,
+        namespaceCpuEfficiencyBottomN: |||
+          bottomk(10,
             namespace:efficiency_cpu:ratio{%(cluster)s}
           )
         ||| % defaultFilters,
 
-        namespaceRamEfficiencyTopN: |||
-          topk(10,
+        namespaceRamEfficiencyBottomN: |||
+          bottomk(10,
             namespace:efficiency_ram:ratio{%(cluster)s}
           )
         ||| % defaultFilters,
@@ -779,7 +779,8 @@ local tbOverride = tbStandardOptions.override;
             graphMode='none',
             decimals=2,
             description='Cost-weighted average CPU allocation efficiency across all namespaces in the cluster. This is CPU usage / OpenCost-exported CPU allocation. Values well below 1.0 indicate allocated CPU that is not being actively used. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.',
-          ),
+          ) +
+          util.efficiencyStatThresholds($._config),
 
         ramEfficiencyStat:
           dashboards.statPanel(
@@ -789,7 +790,8 @@ local tbOverride = tbStandardOptions.override;
             graphMode='none',
             decimals=2,
             description='Cost-weighted average RAM allocation efficiency across all namespaces in the cluster. This is working-set RAM / OpenCost-exported RAM allocation. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.',
-          ),
+          ) +
+          util.efficiencyStatThresholds($._config),
 
         totalEfficiencyStat:
           dashboards.statPanel(
@@ -799,35 +801,40 @@ local tbOverride = tbStandardOptions.override;
             graphMode='none',
             decimals=2,
             description='Cluster total allocation efficiency combining CPU and RAM: (CPUCost × CPUAllocationEfficiency + RAMCost × RAMAllocationEfficiency) / (CPUCost + RAMCost). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.',
-          ),
+          ) +
+          util.efficiencyStatThresholds($._config),
 
         namespaceCpuEfficiencyTimeSeries:
           dashboards.timeSeriesPanel(
-            'CPU Efficiency by Namespace (Top 10)',
+            'CPU Efficiency by Namespace (Bottom 10)',
             'percentunit',
             [
               {
-                expr: queries.namespaceCpuEfficiencyTopN,
+                expr: queries.namespaceCpuEfficiencyBottomN,
                 legend: '{{namespace}}',
                 interval: $._config.dashboardMinInterval,
               },
             ],
-            description='Top 10 namespaces by CPU allocation efficiency. Low values indicate namespaces that have been allocated more CPU than they are actively using.',
-          ),
+            calcs=['min', 'mean', 'max'],
+            description='Bottom 10 namespaces by CPU allocation efficiency. Low values indicate namespaces that have been allocated more CPU than they are actively using.',
+          ) +
+          util.efficiencyTimeSeriesThresholdLine($._config),
 
         namespaceRamEfficiencyTimeSeries:
           dashboards.timeSeriesPanel(
-            'RAM Efficiency by Namespace (Top 10)',
+            'RAM Efficiency by Namespace (Bottom 10)',
             'percentunit',
             [
               {
-                expr: queries.namespaceRamEfficiencyTopN,
+                expr: queries.namespaceRamEfficiencyBottomN,
                 legend: '{{namespace}}',
                 interval: $._config.dashboardMinInterval,
               },
             ],
-            description='Top 10 namespaces by RAM allocation efficiency. Low values indicate namespaces whose allocated memory is above their working-set usage.',
-          ),
+            calcs=['min', 'mean', 'max'],
+            description='Bottom 10 namespaces by RAM allocation efficiency. Low values indicate namespaces whose allocated memory is above their working-set usage.',
+          ) +
+          util.efficiencyTimeSeriesThresholdLine($._config),
       };
 
       local rows =

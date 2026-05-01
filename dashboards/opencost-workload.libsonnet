@@ -463,7 +463,8 @@ local tbQueryOptions = tablePanel.queryOptions;
             graphMode='none',
             decimals=2,
             description='CPU usage / OpenCost-exported CPU allocation for the selected workload(s). Values well below 1.0 indicate allocated CPU that is not being actively used. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.',
-          ),
+          ) +
+          util.efficiencyStatThresholds($._config),
 
         ramEfficiencyStat:
           dashboards.statPanel(
@@ -473,7 +474,8 @@ local tbQueryOptions = tablePanel.queryOptions;
             graphMode='none',
             decimals=2,
             description='Working-set RAM / OpenCost-exported RAM allocation for the selected workload(s). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.',
-          ),
+          ) +
+          util.efficiencyStatThresholds($._config),
 
         totalEfficiencyStat:
           dashboards.statPanel(
@@ -483,7 +485,8 @@ local tbQueryOptions = tablePanel.queryOptions;
             graphMode='none',
             decimals=2,
             description='Workload total allocation efficiency combining CPU and RAM with CPU/RAM cost weights. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.',
-          ),
+          ) +
+          util.efficiencyStatThresholds($._config),
 
         cpuEfficiencyTimeSeries:
           dashboards.timeSeriesPanel(
@@ -496,8 +499,10 @@ local tbQueryOptions = tablePanel.queryOptions;
                 interval: $._config.dashboardMinInterval,
               },
             ],
+            calcs=['min', 'mean', 'max'],
             description='CPU allocation efficiency over time for the selected workload(s).',
-          ),
+          ) +
+          util.efficiencyTimeSeriesThresholdLine($._config),
 
         ramEfficiencyTimeSeries:
           dashboards.timeSeriesPanel(
@@ -510,8 +515,10 @@ local tbQueryOptions = tablePanel.queryOptions;
                 interval: $._config.dashboardMinInterval,
               },
             ],
+            calcs=['min', 'mean', 'max'],
             description='RAM allocation efficiency over time for the selected workload(s).',
-          ),
+          ) +
+          util.efficiencyTimeSeriesThresholdLine($._config),
       };
 
       local rows =

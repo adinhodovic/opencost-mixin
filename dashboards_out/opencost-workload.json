@@ -674,13 +674,19 @@
          "description": "CPU usage / OpenCost-exported CPU allocation for the selected workload(s). Values well below 1.0 indicate allocated CPU that is not being actively used. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.",
          "fieldConfig": {
             "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
                "decimals": 2,
                "mappings": [ ],
                "thresholds": {
                   "steps": [
                      {
+                        "color": "red"
+                     },
+                     {
                         "color": "green",
-                        "value": 0
+                        "value": 0.20000000000000001
                      }
                   ]
                },
@@ -722,13 +728,19 @@
          "description": "Working-set RAM / OpenCost-exported RAM allocation for the selected workload(s). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.",
          "fieldConfig": {
             "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
                "decimals": 2,
                "mappings": [ ],
                "thresholds": {
                   "steps": [
                      {
+                        "color": "red"
+                     },
+                     {
                         "color": "green",
-                        "value": 0
+                        "value": 0.20000000000000001
                      }
                   ]
                },
@@ -770,13 +782,19 @@
          "description": "Workload total allocation efficiency combining CPU and RAM with CPU/RAM cost weights. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.",
          "fieldConfig": {
             "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
                "decimals": 2,
                "mappings": [ ],
                "thresholds": {
                   "steps": [
                      {
+                        "color": "red"
+                     },
+                     {
                         "color": "green",
-                        "value": 0
+                        "value": 0.20000000000000001
                      }
                   ]
                },
@@ -819,7 +837,21 @@
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "fillOpacity": 10,
+                  "thresholdsStyle": {
+                     "mode": "line"
+                  }
+               },
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "red"
+                     },
+                     {
+                        "color": "green",
+                        "value": 0.20000000000000001
+                     }
+                  ]
                },
                "unit": "percentunit"
             },
@@ -835,14 +867,15 @@
          "options": {
             "legend": {
                "calcs": [
+                  "min",
                   "mean",
                   "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "Mean",
-               "sortDesc": true
+               "sortBy": "Min",
+               "sortDesc": false
             },
             "tooltip": {
                "mode": "multi",
@@ -874,7 +907,21 @@
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "fillOpacity": 10,
+                  "thresholdsStyle": {
+                     "mode": "line"
+                  }
+               },
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "red"
+                     },
+                     {
+                        "color": "green",
+                        "value": 0.20000000000000001
+                     }
+                  ]
                },
                "unit": "percentunit"
             },
@@ -890,14 +937,15 @@
          "options": {
             "legend": {
                "calcs": [
+                  "min",
                   "mean",
                   "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "Mean",
-               "sortDesc": true
+               "sortBy": "Min",
+               "sortDesc": false
             },
             "tooltip": {
                "mode": "multi",

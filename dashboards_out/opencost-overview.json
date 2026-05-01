@@ -773,13 +773,19 @@
          "description": "Cost-weighted average CPU allocation efficiency across all namespaces in the cluster. This is CPU usage / OpenCost-exported CPU allocation. Values well below 1.0 indicate allocated CPU that is not being actively used. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.",
          "fieldConfig": {
             "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
                "decimals": 2,
                "mappings": [ ],
                "thresholds": {
                   "steps": [
                      {
+                        "color": "red"
+                     },
+                     {
                         "color": "green",
-                        "value": 0
+                        "value": 0.20000000000000001
                      }
                   ]
                },
@@ -821,13 +827,19 @@
          "description": "Cost-weighted average RAM allocation efficiency across all namespaces in the cluster. This is working-set RAM / OpenCost-exported RAM allocation. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.",
          "fieldConfig": {
             "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
                "decimals": 2,
                "mappings": [ ],
                "thresholds": {
                   "steps": [
                      {
+                        "color": "red"
+                     },
+                     {
                         "color": "green",
-                        "value": 0
+                        "value": 0.20000000000000001
                      }
                   ]
                },
@@ -869,13 +881,19 @@
          "description": "Cluster total allocation efficiency combining CPU and RAM: (CPUCost × CPUAllocationEfficiency + RAMCost × RAMAllocationEfficiency) / (CPUCost + RAMCost). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.",
          "fieldConfig": {
             "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
                "decimals": 2,
                "mappings": [ ],
                "thresholds": {
                   "steps": [
                      {
+                        "color": "red"
+                     },
+                     {
                         "color": "green",
-                        "value": 0
+                        "value": 0.20000000000000001
                      }
                   ]
                },
@@ -914,11 +932,25 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Top 10 namespaces by CPU allocation efficiency. Low values indicate namespaces that have been allocated more CPU than they are actively using.",
+         "description": "Bottom 10 namespaces by CPU allocation efficiency. Low values indicate namespaces that have been allocated more CPU than they are actively using.",
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "fillOpacity": 10,
+                  "thresholdsStyle": {
+                     "mode": "line"
+                  }
+               },
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "red"
+                     },
+                     {
+                        "color": "green",
+                        "value": 0.20000000000000001
+                     }
+                  ]
                },
                "unit": "percentunit"
             },
@@ -934,14 +966,15 @@
          "options": {
             "legend": {
                "calcs": [
+                  "min",
                   "mean",
                   "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "Mean",
-               "sortDesc": true
+               "sortBy": "Min",
+               "sortDesc": false
             },
             "tooltip": {
                "mode": "multi",
@@ -956,12 +989,12 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "topk(10,\n  namespace:efficiency_cpu:ratio{cluster=\"$cluster\"}\n)\n",
+               "expr": "bottomk(10,\n  namespace:efficiency_cpu:ratio{cluster=\"$cluster\"}\n)\n",
                "interval": "30m",
                "legendFormat": "{{namespace}}"
             }
          ],
-         "title": "CPU Efficiency by Namespace (Top 10)",
+         "title": "CPU Efficiency by Namespace (Bottom 10)",
          "type": "timeseries"
       },
       {
@@ -969,11 +1002,25 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Top 10 namespaces by RAM allocation efficiency. Low values indicate namespaces whose allocated memory is above their working-set usage.",
+         "description": "Bottom 10 namespaces by RAM allocation efficiency. Low values indicate namespaces whose allocated memory is above their working-set usage.",
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "fillOpacity": 10,
+                  "thresholdsStyle": {
+                     "mode": "line"
+                  }
+               },
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "red"
+                     },
+                     {
+                        "color": "green",
+                        "value": 0.20000000000000001
+                     }
+                  ]
                },
                "unit": "percentunit"
             },
@@ -989,14 +1036,15 @@
          "options": {
             "legend": {
                "calcs": [
+                  "min",
                   "mean",
                   "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "Mean",
-               "sortDesc": true
+               "sortBy": "Min",
+               "sortDesc": false
             },
             "tooltip": {
                "mode": "multi",
@@ -1011,12 +1059,12 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "topk(10,\n  namespace:efficiency_ram:ratio{cluster=\"$cluster\"}\n)\n",
+               "expr": "bottomk(10,\n  namespace:efficiency_ram:ratio{cluster=\"$cluster\"}\n)\n",
                "interval": "30m",
                "legendFormat": "{{namespace}}"
             }
          ],
-         "title": "RAM Efficiency by Namespace (Top 10)",
+         "title": "RAM Efficiency by Namespace (Bottom 10)",
          "type": "timeseries"
       },
       {

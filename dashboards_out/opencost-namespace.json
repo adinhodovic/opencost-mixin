@@ -686,13 +686,19 @@
          "description": "CPU usage / OpenCost-exported CPU allocation for the selected namespace. Values well below 1.0 indicate allocated CPU that is not being actively used. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.",
          "fieldConfig": {
             "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
                "decimals": 2,
                "mappings": [ ],
                "thresholds": {
                   "steps": [
                      {
+                        "color": "red"
+                     },
+                     {
                         "color": "green",
-                        "value": 0
+                        "value": 0.20000000000000001
                      }
                   ]
                },
@@ -734,13 +740,19 @@
          "description": "Working-set RAM / OpenCost-exported RAM allocation for the selected namespace. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.",
          "fieldConfig": {
             "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
                "decimals": 2,
                "mappings": [ ],
                "thresholds": {
                   "steps": [
                      {
+                        "color": "red"
+                     },
+                     {
                         "color": "green",
-                        "value": 0
+                        "value": 0.20000000000000001
                      }
                   ]
                },
@@ -782,13 +794,19 @@
          "description": "Namespace total allocation efficiency combining CPU and RAM with CPU/RAM cost weights. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.",
          "fieldConfig": {
             "defaults": {
+               "color": {
+                  "mode": "thresholds"
+               },
                "decimals": 2,
                "mappings": [ ],
                "thresholds": {
                   "steps": [
                      {
+                        "color": "red"
+                     },
+                     {
                         "color": "green",
-                        "value": 0
+                        "value": 0.20000000000000001
                      }
                   ]
                },
@@ -827,11 +845,25 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Top 10 workloads inside the selected namespace by CPU allocation efficiency. Low values indicate workloads that have been allocated more CPU than they are actively using.",
+         "description": "Bottom 10 workloads inside the selected namespace by CPU allocation efficiency. Low values indicate workloads that have been allocated more CPU than they are actively using.",
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "fillOpacity": 10,
+                  "thresholdsStyle": {
+                     "mode": "line"
+                  }
+               },
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "red"
+                     },
+                     {
+                        "color": "green",
+                        "value": 0.20000000000000001
+                     }
+                  ]
                },
                "unit": "percentunit"
             },
@@ -847,14 +879,15 @@
          "options": {
             "legend": {
                "calcs": [
+                  "min",
                   "mean",
                   "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "Mean",
-               "sortDesc": true
+               "sortBy": "Min",
+               "sortDesc": false
             },
             "tooltip": {
                "mode": "multi",
@@ -869,12 +902,12 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "topk(10,\n  workload:efficiency_cpu:ratio{cluster=\"$cluster\", namespace=\"$namespace\"}\n)\n",
+               "expr": "bottomk(10,\n  workload:efficiency_cpu:ratio{cluster=\"$cluster\", namespace=\"$namespace\"}\n)\n",
                "interval": "30m",
                "legendFormat": "{{workload_type}}/{{workload}}"
             }
          ],
-         "title": "CPU Efficiency by Workload (Top 10)",
+         "title": "CPU Efficiency by Workload (Bottom 10)",
          "type": "timeseries"
       },
       {
@@ -882,11 +915,25 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Top 10 workloads inside the selected namespace by RAM allocation efficiency.",
+         "description": "Bottom 10 workloads inside the selected namespace by RAM allocation efficiency.",
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "fillOpacity": 10
+                  "fillOpacity": 10,
+                  "thresholdsStyle": {
+                     "mode": "line"
+                  }
+               },
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "red"
+                     },
+                     {
+                        "color": "green",
+                        "value": 0.20000000000000001
+                     }
+                  ]
                },
                "unit": "percentunit"
             },
@@ -902,14 +949,15 @@
          "options": {
             "legend": {
                "calcs": [
+                  "min",
                   "mean",
                   "max"
                ],
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "Mean",
-               "sortDesc": true
+               "sortBy": "Min",
+               "sortDesc": false
             },
             "tooltip": {
                "mode": "multi",
@@ -924,12 +972,12 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "topk(10,\n  workload:efficiency_ram:ratio{cluster=\"$cluster\", namespace=\"$namespace\"}\n)\n",
+               "expr": "bottomk(10,\n  workload:efficiency_ram:ratio{cluster=\"$cluster\", namespace=\"$namespace\"}\n)\n",
                "interval": "30m",
                "legendFormat": "{{workload_type}}/{{workload}}"
             }
          ],
-         "title": "RAM Efficiency by Workload (Top 10)",
+         "title": "RAM Efficiency by Workload (Bottom 10)",
          "type": "timeseries"
       },
       {
