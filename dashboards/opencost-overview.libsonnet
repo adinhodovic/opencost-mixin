@@ -355,43 +355,113 @@ local tbOverride = tbStandardOptions.override;
         // denominators. This is close to the OpenCost model, but not exact UI/API
         // parity because native CPUEfficiency/RAMEfficiency use request averages.
         // Backed by the opencost.rules.efficiency recording rules shipped here.
-        clusterCpuEfficiency: |||
-          sum(namespace:opencost_cpu_cost:sum{%(cluster)s} * namespace:efficiency_cpu:ratio{%(cluster)s})
-          /
-          sum(namespace:opencost_cpu_cost:sum{%(cluster)s})
+        namespaceMonthlyCpuRamCost: |||
+          (
+            namespace:opencost_cpu_cost:sum{%(cluster)s}
+            +
+            namespace:opencost_ram_cost:sum{%(cluster)s}
+          ) * 730
         ||| % defaultFilters,
+
+        namespaceEfficiencyCostFilter: |||
+          %(namespaceMonthlyCpuRamCost)s > %(minMonthlyCostThreshold)s
+        ||| % {
+          namespaceMonthlyCpuRamCost: queries.namespaceMonthlyCpuRamCost,
+          minMonthlyCostThreshold: $._config.alerts.efficiency.minMonthlyCostThreshold,
+        },
+
+        clusterCpuEfficiency: |||
+          sum(
+            (
+              namespace:opencost_cpu_cost:sum{%(cluster)s}
+              *
+              namespace:efficiency_cpu:ratio{%(cluster)s}
+            )
+            and on(%(clusterLabel)s, namespace)
+            (%(namespaceEfficiencyCostFilter)s)
+          )
+          /
+          sum(
+            namespace:opencost_cpu_cost:sum{%(cluster)s}
+            and on(%(clusterLabel)s, namespace)
+            (%(namespaceEfficiencyCostFilter)s)
+          )
+        ||| % (defaultFilters {
+                 clusterLabel: $._config.clusterLabel,
+                 namespaceEfficiencyCostFilter: queries.namespaceEfficiencyCostFilter,
+               }),
 
         clusterRamEfficiency: |||
-          sum(namespace:opencost_ram_cost:sum{%(cluster)s} * namespace:efficiency_ram:ratio{%(cluster)s})
+          sum(
+            (
+              namespace:opencost_ram_cost:sum{%(cluster)s}
+              *
+              namespace:efficiency_ram:ratio{%(cluster)s}
+            )
+            and on(%(clusterLabel)s, namespace)
+            (%(namespaceEfficiencyCostFilter)s)
+          )
           /
-          sum(namespace:opencost_ram_cost:sum{%(cluster)s})
-        ||| % defaultFilters,
+          sum(
+            namespace:opencost_ram_cost:sum{%(cluster)s}
+            and on(%(clusterLabel)s, namespace)
+            (%(namespaceEfficiencyCostFilter)s)
+          )
+        ||| % (defaultFilters {
+                 clusterLabel: $._config.clusterLabel,
+                 namespaceEfficiencyCostFilter: queries.namespaceEfficiencyCostFilter,
+               }),
 
         clusterTotalEfficiency: |||
-          (
-            sum(namespace:opencost_cpu_cost:sum{%(cluster)s} * namespace:efficiency_cpu:ratio{%(cluster)s})
-            +
-            sum(namespace:opencost_ram_cost:sum{%(cluster)s} * namespace:efficiency_ram:ratio{%(cluster)s})
+          sum(
+            (
+              namespace:opencost_cpu_cost:sum{%(cluster)s}
+              *
+              namespace:efficiency_cpu:ratio{%(cluster)s}
+              +
+              namespace:opencost_ram_cost:sum{%(cluster)s}
+              *
+              namespace:efficiency_ram:ratio{%(cluster)s}
+            )
+            and on(%(clusterLabel)s, namespace)
+            (%(namespaceEfficiencyCostFilter)s)
           )
           /
-          (
-            sum(namespace:opencost_cpu_cost:sum{%(cluster)s})
-            +
-            sum(namespace:opencost_ram_cost:sum{%(cluster)s})
+          sum(
+            (
+              namespace:opencost_cpu_cost:sum{%(cluster)s}
+              +
+              namespace:opencost_ram_cost:sum{%(cluster)s}
+            )
+            and on(%(clusterLabel)s, namespace)
+            (%(namespaceEfficiencyCostFilter)s)
           )
-        ||| % defaultFilters,
+        ||| % (defaultFilters {
+                 clusterLabel: $._config.clusterLabel,
+                 namespaceEfficiencyCostFilter: queries.namespaceEfficiencyCostFilter,
+               }),
 
         namespaceCpuEfficiencyBottomN: |||
           bottomk(10,
             namespace:efficiency_cpu:ratio{%(cluster)s}
+            and on(%(clusterLabel)s, namespace)
+            (%(namespaceEfficiencyCostFilter)s)
           )
-        ||| % defaultFilters,
+        ||| % (defaultFilters {
+                 clusterLabel: $._config.clusterLabel,
+                 namespaceEfficiencyCostFilter: queries.namespaceEfficiencyCostFilter,
+               }),
 
         namespaceRamEfficiencyBottomN: |||
           bottomk(10,
             namespace:efficiency_ram:ratio{%(cluster)s}
+            and on(%(clusterLabel)s, namespace)
+            (%(namespaceEfficiencyCostFilter)s)
           )
-        ||| % defaultFilters,
+        ||| % (defaultFilters {
+                 clusterLabel: $._config.clusterLabel,
+                 namespaceEfficiencyCostFilter: queries.namespaceEfficiencyCostFilter,
+               }),
       };
 
       local panels = {
@@ -778,7 +848,7 @@ local tbOverride = tbStandardOptions.override;
             queries.clusterCpuEfficiency,
             graphMode='none',
             decimals=2,
-            description='Cost-weighted average CPU allocation efficiency across all namespaces in the cluster. This is CPU usage / OpenCost-exported CPU allocation. Values well below 1.0 indicate allocated CPU that is not being actively used. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.',
+            description='Cost-weighted average CPU allocation efficiency across namespaces above the projected monthly CPU+RAM cost threshold. This is CPU usage / OpenCost-exported CPU allocation. Values well below 1.0 indicate allocated CPU that is not being actively used. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.',
           ) +
           util.efficiencyStatThresholds($._config),
 
@@ -789,7 +859,7 @@ local tbOverride = tbStandardOptions.override;
             queries.clusterRamEfficiency,
             graphMode='none',
             decimals=2,
-            description='Cost-weighted average RAM allocation efficiency across all namespaces in the cluster. This is working-set RAM / OpenCost-exported RAM allocation. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.',
+            description='Cost-weighted average RAM allocation efficiency across namespaces above the projected monthly CPU+RAM cost threshold. This is working-set RAM / OpenCost-exported RAM allocation. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.',
           ) +
           util.efficiencyStatThresholds($._config),
 
@@ -800,7 +870,7 @@ local tbOverride = tbStandardOptions.override;
             queries.clusterTotalEfficiency,
             graphMode='none',
             decimals=2,
-            description='Cluster total allocation efficiency combining CPU and RAM: (CPUCost × CPUAllocationEfficiency + RAMCost × RAMAllocationEfficiency) / (CPUCost + RAMCost). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.',
+            description='Cluster total allocation efficiency across namespaces above the projected monthly CPU+RAM cost threshold, combining CPU and RAM: (CPUCost × CPUAllocationEfficiency + RAMCost × RAMAllocationEfficiency) / (CPUCost + RAMCost). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.',
           ) +
           util.efficiencyStatThresholds($._config),
 
@@ -816,7 +886,7 @@ local tbOverride = tbStandardOptions.override;
               },
             ],
             calcs=['min', 'mean', 'max'],
-            description='Bottom 10 namespaces by CPU allocation efficiency. Low values indicate namespaces that have been allocated more CPU than they are actively using.',
+            description='Bottom 10 namespaces above the projected monthly CPU+RAM cost threshold by CPU allocation efficiency. Low values indicate namespaces that have been allocated more CPU than they are actively using.',
           ) +
           util.efficiencyTimeSeriesThresholdLine($._config),
 
@@ -832,7 +902,7 @@ local tbOverride = tbStandardOptions.override;
               },
             ],
             calcs=['min', 'mean', 'max'],
-            description='Bottom 10 namespaces by RAM allocation efficiency. Low values indicate namespaces whose allocated memory is above their working-set usage.',
+            description='Bottom 10 namespaces above the projected monthly CPU+RAM cost threshold by RAM allocation efficiency. Low values indicate namespaces whose allocated memory is above their working-set usage.',
           ) +
           util.efficiencyTimeSeriesThresholdLine($._config),
       };

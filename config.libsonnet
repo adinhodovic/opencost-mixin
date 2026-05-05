@@ -55,6 +55,8 @@ local annotation = g.dashboard.annotation;
         enabled: true,
         // Fire when namespace total (cost-weighted) efficiency falls below this ratio.
         minEfficiencyThreshold: 0.20,
+        // Ignore low-efficiency namespaces below this projected monthly CPU+RAM cost.
+        minMonthlyCostThreshold: 100,
         severity: 'info',
       },
     },

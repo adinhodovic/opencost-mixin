@@ -770,7 +770,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Cost-weighted average CPU allocation efficiency across all namespaces in the cluster. This is CPU usage / OpenCost-exported CPU allocation. Values well below 1.0 indicate allocated CPU that is not being actively used. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.",
+         "description": "Cost-weighted average CPU allocation efficiency across namespaces above the projected monthly CPU+RAM cost threshold. This is CPU usage / OpenCost-exported CPU allocation. Values well below 1.0 indicate allocated CPU that is not being actively used. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.",
          "fieldConfig": {
             "defaults": {
                "color": {
@@ -812,7 +812,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"} * namespace:efficiency_cpu:ratio{cluster=\"$cluster\"})\n/\nsum(namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"})\n",
+               "expr": "sum(\n  (\n    namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n    *\n    namespace:efficiency_cpu:ratio{cluster=\"$cluster\"}\n  )\n  and on(cluster, namespace)\n  ((\n  namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n  +\n  namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n) * 730\n > 100\n)\n)\n/\nsum(\n  namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n  and on(cluster, namespace)\n  ((\n  namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n  +\n  namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n) * 730\n > 100\n)\n)\n",
                "instant": false
             }
          ],
@@ -824,7 +824,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Cost-weighted average RAM allocation efficiency across all namespaces in the cluster. This is working-set RAM / OpenCost-exported RAM allocation. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.",
+         "description": "Cost-weighted average RAM allocation efficiency across namespaces above the projected monthly CPU+RAM cost threshold. This is working-set RAM / OpenCost-exported RAM allocation. It is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.",
          "fieldConfig": {
             "defaults": {
                "color": {
@@ -866,7 +866,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(namespace:opencost_ram_cost:sum{cluster=\"$cluster\"} * namespace:efficiency_ram:ratio{cluster=\"$cluster\"})\n/\nsum(namespace:opencost_ram_cost:sum{cluster=\"$cluster\"})\n",
+               "expr": "sum(\n  (\n    namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n    *\n    namespace:efficiency_ram:ratio{cluster=\"$cluster\"}\n  )\n  and on(cluster, namespace)\n  ((\n  namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n  +\n  namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n) * 730\n > 100\n)\n)\n/\nsum(\n  namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n  and on(cluster, namespace)\n  ((\n  namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n  +\n  namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n) * 730\n > 100\n)\n)\n",
                "instant": false
             }
          ],
@@ -878,7 +878,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Cluster total allocation efficiency combining CPU and RAM: (CPUCost × CPUAllocationEfficiency + RAMCost × RAMAllocationEfficiency) / (CPUCost + RAMCost). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.",
+         "description": "Cluster total allocation efficiency across namespaces above the projected monthly CPU+RAM cost threshold, combining CPU and RAM: (CPUCost × CPUAllocationEfficiency + RAMCost × RAMAllocationEfficiency) / (CPUCost + RAMCost). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.",
          "fieldConfig": {
             "defaults": {
                "color": {
@@ -920,7 +920,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "(\n  sum(namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"} * namespace:efficiency_cpu:ratio{cluster=\"$cluster\"})\n  +\n  sum(namespace:opencost_ram_cost:sum{cluster=\"$cluster\"} * namespace:efficiency_ram:ratio{cluster=\"$cluster\"})\n)\n/\n(\n  sum(namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"})\n  +\n  sum(namespace:opencost_ram_cost:sum{cluster=\"$cluster\"})\n)\n",
+               "expr": "sum(\n  (\n    namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n    *\n    namespace:efficiency_cpu:ratio{cluster=\"$cluster\"}\n    +\n    namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n    *\n    namespace:efficiency_ram:ratio{cluster=\"$cluster\"}\n  )\n  and on(cluster, namespace)\n  ((\n  namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n  +\n  namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n) * 730\n > 100\n)\n)\n/\nsum(\n  (\n    namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n    +\n    namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n  )\n  and on(cluster, namespace)\n  ((\n  namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n  +\n  namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n) * 730\n > 100\n)\n)\n",
                "instant": false
             }
          ],
@@ -932,7 +932,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Bottom 10 namespaces by CPU allocation efficiency. Low values indicate namespaces that have been allocated more CPU than they are actively using.",
+         "description": "Bottom 10 namespaces above the projected monthly CPU+RAM cost threshold by CPU allocation efficiency. Low values indicate namespaces that have been allocated more CPU than they are actively using.",
          "fieldConfig": {
             "defaults": {
                "custom": {
@@ -989,7 +989,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "bottomk(10,\n  namespace:efficiency_cpu:ratio{cluster=\"$cluster\"}\n)\n",
+               "expr": "bottomk(10,\n  namespace:efficiency_cpu:ratio{cluster=\"$cluster\"}\n  and on(cluster, namespace)\n  ((\n  namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n  +\n  namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n) * 730\n > 100\n)\n)\n",
                "interval": "30m",
                "legendFormat": "{{namespace}}"
             }
@@ -1002,7 +1002,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Bottom 10 namespaces by RAM allocation efficiency. Low values indicate namespaces whose allocated memory is above their working-set usage.",
+         "description": "Bottom 10 namespaces above the projected monthly CPU+RAM cost threshold by RAM allocation efficiency. Low values indicate namespaces whose allocated memory is above their working-set usage.",
          "fieldConfig": {
             "defaults": {
                "custom": {
@@ -1059,7 +1059,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "bottomk(10,\n  namespace:efficiency_ram:ratio{cluster=\"$cluster\"}\n)\n",
+               "expr": "bottomk(10,\n  namespace:efficiency_ram:ratio{cluster=\"$cluster\"}\n  and on(cluster, namespace)\n  ((\n  namespace:opencost_cpu_cost:sum{cluster=\"$cluster\"}\n  +\n  namespace:opencost_ram_cost:sum{cluster=\"$cluster\"}\n) * 730\n > 100\n)\n)\n",
                "interval": "30m",
                "legendFormat": "{{namespace}}"
             }

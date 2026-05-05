@@ -162,20 +162,30 @@
         rules: [
           {
             // Fires when a namespace's cost-weighted allocation efficiency stays
-            // below the configured threshold over 7d. This uses OpenCost-exported
-            // allocation metrics as the denominator; OpenCost UI/API efficiency
-            // uses request-average denominators.
+            // below the configured threshold over 7d, ignoring low-cost namespaces.
+            // This uses OpenCost-exported allocation metrics as the denominator;
+            // OpenCost UI/API efficiency uses request-average denominators.
             alert: 'OpenCostLowEfficiencyNamespace',
             expr: |||
-              avg_over_time(namespace:efficiency_total:ratio[7d]) < %(minEfficiencyThreshold)s
-            ||| % $._config.alerts.efficiency,
+              (
+                avg_over_time(namespace:efficiency_total:ratio[7d]) < %(minEfficiencyThreshold)s
+              )
+              and on(%(clusterLabel)s, namespace)
+              (
+                (
+                  avg_over_time(namespace:opencost_cpu_cost:sum[7d])
+                  +
+                  avg_over_time(namespace:opencost_ram_cost:sum[7d])
+                ) * 730 > %(minMonthlyCostThreshold)s
+              )
+            ||| % ($._config.alerts.efficiency { clusterLabel: $._config.clusterLabel }),
             labels: {
               severity: $._config.alerts.efficiency.severity,
             },
             'for': '1h',
             annotations: {
               summary: 'Namespace {{ $labels.namespace }} on {{ $labels.%(clusterLabel)s }} is chronically under-utilizing its requests' % $._config,
-              description: 'Total CPU+RAM cost-weighted allocation efficiency for namespace {{ $labels.namespace }} on cluster {{ $labels.%(clusterLabel)s }} has averaged {{ $value | humanizePercentage }} over the last 7 days. This is usage divided by OpenCost-exported allocation, not exact OpenCost UI/API request-based efficiency. Consider rightsizing container requests.' % $._config,
+              description: 'Total CPU+RAM cost-weighted allocation efficiency for namespace {{ $labels.namespace }} on cluster {{ $labels.%(clusterLabel)s }} has averaged {{ $value | humanizePercentage }} over the last 7 days, with projected monthly CPU+RAM cost above $%(minMonthlyCostThreshold)s. This is usage divided by OpenCost-exported allocation, not exact OpenCost UI/API request-based efficiency. Consider rightsizing container requests.' % ($._config { minMonthlyCostThreshold: $._config.alerts.efficiency.minMonthlyCostThreshold }),
               dashboard_url: $._config.dashboardUrls['opencost-namespace'] + clusterVariableQueryString,
             },
           },
