@@ -175,6 +175,17 @@ local tbQueryOptions = tablePanel.queryOptions;
           ) by (pod)
         ||| % ($._config { workloadFilters: workloadFilters }),
 
+        // Allocation efficiency queries. OpenCost does not export native efficiency
+        // metrics, so the recording rules use OpenCost allocation metrics as
+        // denominators. This is close to the OpenCost model, but not exact UI/API
+        // parity because native CPUEfficiency/RAMEfficiency use request averages.
+        // Backed by the workload:efficiency_*:ratio recording rules shipped here.
+        workloadCpuEfficiency: 'workload:efficiency_cpu:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
+        workloadRamEfficiency: 'workload:efficiency_ram:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
+        workloadTotalEfficiency: 'workload:efficiency_total:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
+
+        workloadCpuEfficiencyTimeSeriesQuery: 'workload:efficiency_cpu:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
+        workloadRamEfficiencyTimeSeriesQuery: 'workload:efficiency_ram:ratio{%(withNamespaceWorkload)s}' % defaultFilters,
       };
 
       local panels = {
@@ -443,6 +454,71 @@ local tbQueryOptions = tablePanel.queryOptions;
               ),
             ]
           ),
+
+        cpuEfficiencyStat:
+          dashboards.statPanel(
+            'CPU Efficiency',
+            'percentunit',
+            queries.workloadCpuEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='CPU usage / OpenCost-exported CPU allocation for the selected workload(s). Values well below 1.0 indicate allocated CPU that is not being actively used. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.',
+          ) +
+          util.efficiencyStatThresholds($._config),
+
+        ramEfficiencyStat:
+          dashboards.statPanel(
+            'RAM Efficiency',
+            'percentunit',
+            queries.workloadRamEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='Working-set RAM / OpenCost-exported RAM allocation for the selected workload(s). This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.',
+          ) +
+          util.efficiencyStatThresholds($._config),
+
+        totalEfficiencyStat:
+          dashboards.statPanel(
+            'Total Efficiency',
+            'percentunit',
+            queries.workloadTotalEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='Workload total allocation efficiency combining CPU and RAM with CPU/RAM cost weights. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.',
+          ) +
+          util.efficiencyStatThresholds($._config),
+
+        cpuEfficiencyTimeSeries:
+          dashboards.timeSeriesPanel(
+            'CPU Efficiency',
+            'percentunit',
+            [
+              {
+                expr: queries.workloadCpuEfficiencyTimeSeriesQuery,
+                legend: '{{workload_type}}/{{workload}}',
+                interval: $._config.dashboardMinInterval,
+              },
+            ],
+            calcs=['min', 'mean', 'max'],
+            description='CPU allocation efficiency over time for the selected workload(s).',
+          ) +
+          util.efficiencyTimeSeriesThresholdLine($._config),
+
+        ramEfficiencyTimeSeries:
+          dashboards.timeSeriesPanel(
+            'RAM Efficiency',
+            'percentunit',
+            [
+              {
+                expr: queries.workloadRamEfficiencyTimeSeriesQuery,
+                legend: '{{workload_type}}/{{workload}}',
+                interval: $._config.dashboardMinInterval,
+              },
+            ],
+            calcs=['min', 'mean', 'max'],
+            description='RAM allocation efficiency over time for the selected workload(s).',
+          ) +
+          util.efficiencyTimeSeriesThresholdLine($._config),
       };
 
       local rows =
@@ -486,24 +562,50 @@ local tbQueryOptions = tablePanel.queryOptions;
           startY=10
         ) +
         [
-          row.new('Workload Breakdown') +
+          row.new('Efficiency') +
           row.gridPos.withX(0) +
           row.gridPos.withY(25) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
+        ] +
+        grid.wrapPanels(
+          [
+            panels.cpuEfficiencyStat,
+            panels.ramEfficiencyStat,
+            panels.totalEfficiencyStat,
+          ],
+          panelWidth=8,
+          panelHeight=3,
+          startY=26
+        ) +
+        grid.wrapPanels(
+          [
+            panels.cpuEfficiencyTimeSeries,
+            panels.ramEfficiencyTimeSeries,
+          ],
+          panelWidth=12,
+          panelHeight=5,
+          startY=29
+        ) +
+        [
+          row.new('Workload Breakdown') +
+          row.gridPos.withX(0) +
+          row.gridPos.withY(34) +
+          row.gridPos.withW(24) +
+          row.gridPos.withH(1),
           panels.workloadTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(26) +
+          tablePanel.gridPos.withY(35) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
           row.new('Persistent Volume Claims') +
           row.gridPos.withX(0) +
-          row.gridPos.withY(36) +
+          row.gridPos.withY(45) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.pvcTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(37) +
+          tablePanel.gridPos.withY(46) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(8),
         ];
