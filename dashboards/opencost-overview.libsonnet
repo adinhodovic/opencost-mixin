@@ -265,8 +265,8 @@ local tbOverride = tbStandardOptions.override;
                 container_memory_allocation_bytes{
                   %(cluster)s,
                   %(job)s}
-              ) by (namespace, instance)
-              * on(instance) group_left()
+              ) by (%(namespaceLabel)s, %(instanceLabel)s)
+              * on(%(instanceLabel)s) group_left()
                 (
                   node_ram_hourly_cost{
                     %(cluster)s,
@@ -277,14 +277,14 @@ local tbOverride = tbStandardOptions.override;
                 container_cpu_allocation{
                   %(cluster)s,
                   %(job)s}
-              ) by (namespace, instance)
-              * on(instance) group_left()
+              ) by (%(namespaceLabel)s, %(instanceLabel)s)
+              * on(%(instanceLabel)s) group_left()
                 (
                   node_cpu_hourly_cost{
                     %(cluster)s,
                     %(job)s} * 730
                 )
-            ) by (namespace)
+            ) by (%(namespaceLabel)s)
           )
         ||| % defaultFilters,
 
@@ -521,7 +521,7 @@ local tbOverride = tbStandardOptions.override;
             'Cost by Namespace',
             'currencyUSD',
             queries.namespaceMonthlyCost,
-            '{{ namespace }}',
+            '{{ %s }}' % $._config.namespaceLabel,
             description='Top 10 namespaces by monthly cost showing which teams, applications, or environments consume the most resources. Use this to allocate costs to teams, identify expensive applications, and ensure fair resource distribution across the organization.',
             values=['percent', 'value']
           ),
