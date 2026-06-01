@@ -11,9 +11,13 @@ local query = variable.query;
     local this = self,
     cluster: '%(clusterLabel)s="$cluster"' % config,
     job: 'job="$job"',
-    namespace: 'namespace="$namespace"',
+    namespace: '%(namespaceLabel)s="$namespace"' % config,
     workloadType: 'workload_type=~"$workload_type"',
     workload: 'workload=~"$workload"',
+    clusterLabel: config.clusterLabel,
+    namespaceLabel: config.namespaceLabel,
+    podLabel: config.podLabel,
+    instanceLabel: config.instanceLabel,
 
     base: |||
       %(cluster)s,
@@ -90,7 +94,7 @@ local query = variable.query;
     namespace:
       query.new(
         'namespace',
-        'label_values(kube_namespace_labels{%(cluster)s, %(job)s}, namespace)' % defaultFilters
+        'label_values(kube_namespace_labels{%(cluster)s, %(job)s}, %(namespaceLabel)s)' % defaultFilters
       ) +
       query.withDatasourceFromVariable(this.datasource) +
       query.withSort() +
@@ -106,7 +110,7 @@ local query = variable.query;
       query.withDatasourceFromVariable(this.datasource) +
       query.queryTypes.withLabelValues(
         'workload_type',
-        'namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", namespace="$namespace"}' % config,
+        'namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(namespaceLabel)s="$namespace"}' % config,
       ) +
       query.generalOptions.withLabel('Workload Type') +
       query.refresh.onTime() +
@@ -119,7 +123,7 @@ local query = variable.query;
       query.withDatasourceFromVariable(this.datasource) +
       query.queryTypes.withLabelValues(
         'workload',
-        'namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", namespace="$namespace", workload_type=~"$workload_type"}' % config,
+        'namespace_workload_pod:kube_pod_owner:relabel{%(clusterLabel)s="$cluster", %(namespaceLabel)s="$namespace", workload_type=~"$workload_type"}' % config,
       ) +
       query.generalOptions.withLabel('Workload') +
       query.refresh.onTime() +

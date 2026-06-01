@@ -37,36 +37,36 @@ local tbQueryOptions = tablePanel.queryOptions;
 
       local queries = {
         hourlyRamCostByWorkload: |||
-          sum by (%s, namespace, workload_type, workload) (
-            avg_over_time(workload:opencost_ram_cost:sum{%s}[1h:5m])
+          sum by (%(clusterLabel)s, %(namespaceLabel)s, workload_type, workload) (
+            avg_over_time(workload:opencost_ram_cost:sum{%(workloadFilters)s}[1h:5m])
           )
-        ||| % [$._config.clusterLabel, workloadFilters],
+        ||| % ($._config { workloadFilters: workloadFilters }),
 
         hourlyCpuCostByWorkload: |||
-          sum by (%s, namespace, workload_type, workload) (
-            avg_over_time(workload:opencost_cpu_cost:sum{%s}[1h:5m])
+          sum by (%(clusterLabel)s, %(namespaceLabel)s, workload_type, workload) (
+            avg_over_time(workload:opencost_cpu_cost:sum{%(workloadFilters)s}[1h:5m])
           )
-        ||| % [$._config.clusterLabel, workloadFilters],
+        ||| % ($._config { workloadFilters: workloadFilters }),
 
         hourlyPvcCostByWorkload: |||
-          sum by (%s, namespace, workload_type, workload) (
-            avg_over_time(workload:opencost_pvc_cost:sum{%s}[1h:5m])
+          sum by (%(clusterLabel)s, %(namespaceLabel)s, workload_type, workload) (
+            avg_over_time(workload:opencost_pvc_cost:sum{%(workloadFilters)s}[1h:5m])
           )
-        ||| % [$._config.clusterLabel, workloadFilters],
+        ||| % ($._config { workloadFilters: workloadFilters }),
 
         pvcMonthlyCostByClaim: |||
           sum by (persistentvolumeclaim, workload_type, workload) (
             avg_over_time(
-              workload:opencost_pvc_cost:sum{%s}[1h:5m]
+              workload:opencost_pvc_cost:sum{%(workloadFilters)s}[1h:5m]
             )
           ) * 730
-        ||| % workloadFilters,
+        ||| % ($._config { workloadFilters: workloadFilters }),
 
         hourlyGpuCostByWorkload: |||
-          sum by (%s, namespace, workload_type, workload) (
-            avg_over_time(workload:opencost_gpu_cost:sum{%s}[1h:5m])
+          sum by (%(clusterLabel)s, %(namespaceLabel)s, workload_type, workload) (
+            avg_over_time(workload:opencost_gpu_cost:sum{%(workloadFilters)s}[1h:5m])
           )
-        ||| % [$._config.clusterLabel, workloadFilters],
+        ||| % ($._config { workloadFilters: workloadFilters }),
 
         hourlyCostByWorkload: |||
           (
@@ -121,16 +121,16 @@ local tbQueryOptions = tablePanel.queryOptions;
                 sum(
                   container_memory_allocation_bytes{
                     %(clusterLabel)s="$cluster",
-                    namespace="$namespace"
+                    %(namespaceLabel)s="$namespace"
                   }
-                ) by (%(clusterLabel)s, namespace, pod, instance)
-                * on(%(clusterLabel)s, instance) group_left()
+                ) by (%(clusterLabel)s, %(namespaceLabel)s, %(podLabel)s, %(instanceLabel)s)
+                * on(%(clusterLabel)s, %(instanceLabel)s) group_left()
                 (
                   avg(
                     node_ram_hourly_cost{
                       %(clusterLabel)s="$cluster"
                     }
-                  ) by (%(clusterLabel)s, instance) / (1024 * 1024 * 1024) * 730
+                  ) by (%(clusterLabel)s, %(instanceLabel)s) / (1024 * 1024 * 1024) * 730
                 )
               )
               +
@@ -138,16 +138,16 @@ local tbQueryOptions = tablePanel.queryOptions;
                 sum(
                   container_cpu_allocation{
                     %(clusterLabel)s="$cluster",
-                    namespace="$namespace"
+                    %(namespaceLabel)s="$namespace"
                   }
-                ) by (%(clusterLabel)s, namespace, pod, instance)
-                * on(%(clusterLabel)s, instance) group_left()
+                ) by (%(clusterLabel)s, %(namespaceLabel)s, %(podLabel)s, %(instanceLabel)s)
+                * on(%(clusterLabel)s, %(instanceLabel)s) group_left()
                 (
                   avg(
                     node_cpu_hourly_cost{
                       %(clusterLabel)s="$cluster"
                     }
-                  ) by (%(clusterLabel)s, instance) * 730
+                  ) by (%(clusterLabel)s, %(instanceLabel)s) * 730
                 )
               )
               +
@@ -155,24 +155,24 @@ local tbQueryOptions = tablePanel.queryOptions;
                 sum(
                   container_gpu_allocation{
                     %(clusterLabel)s="$cluster",
-                    namespace="$namespace"
+                    %(namespaceLabel)s="$namespace"
                   }
-                ) by (%(clusterLabel)s, namespace, pod, instance)
-                * on(%(clusterLabel)s, instance) group_left()
+                ) by (%(clusterLabel)s, %(namespaceLabel)s, %(podLabel)s, %(instanceLabel)s)
+                * on(%(clusterLabel)s, %(instanceLabel)s) group_left()
                 (
                   avg(
                     node_gpu_hourly_cost{
                       %(clusterLabel)s="$cluster"
                     }
-                  ) by (%(clusterLabel)s, instance) * 730
+                  ) by (%(clusterLabel)s, %(instanceLabel)s) * 730
                 )
               )
             )
-            * on(%(clusterLabel)s, namespace, pod) group_left(workload_type, workload)
-            max by (%(clusterLabel)s, namespace, pod, workload_type, workload) (
+            * on(%(clusterLabel)s, %(namespaceLabel)s, %(podLabel)s) group_left(workload_type, workload)
+            max by (%(clusterLabel)s, %(namespaceLabel)s, %(podLabel)s, workload_type, workload) (
                 namespace_workload_pod:kube_pod_owner:relabel{%(workloadFilters)s}
               )
-          ) by (pod)
+          ) by (%(podLabel)s)
         ||| % ($._config { workloadFilters: workloadFilters }),
 
       };
@@ -394,7 +394,7 @@ local tbQueryOptions = tablePanel.queryOptions;
                   },
                   excludeByName: {
                     Time: true,
-                    namespace: true,
+                    [$._config.namespaceLabel]: true,
                     [$._config.clusterLabel]: true,
                   },
                 }
@@ -436,7 +436,7 @@ local tbQueryOptions = tablePanel.queryOptions;
                   },
                   excludeByName: {
                     Time: true,
-                    namespace: true,
+                    [$._config.namespaceLabel]: true,
                     [$._config.clusterLabel]: true,
                   },
                 }

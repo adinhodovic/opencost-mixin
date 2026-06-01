@@ -38,14 +38,14 @@ local tbOverride = tbStandardOptions.override;
                 %(withNamespace)s
               }
             )
-            by (namespace, instance)
-            * on(instance) group_left()
+            by (%(namespaceLabel)s, %(instanceLabel)s)
+            * on(%(instanceLabel)s) group_left()
             (
               avg(
                 node_ram_hourly_cost{
                   %(default)s
                 }
-              ) by (instance) / (1024 * 1024 * 1024) * 730
+              ) by (%(instanceLabel)s) / (1024 * 1024 * 1024) * 730
             )
           )
         ||| % defaultFilters,
@@ -57,14 +57,14 @@ local tbOverride = tbStandardOptions.override;
                 %(withNamespace)s
               }
             )
-            by (namespace, instance)
-            * on(instance) group_left()
+            by (%(namespaceLabel)s, %(instanceLabel)s)
+            * on(%(instanceLabel)s) group_left()
             (
               avg(
                 node_cpu_hourly_cost{
                   %(default)s
                 }
-              ) by (instance) * 730
+              ) by (%(instanceLabel)s) * 730
             )
           )
         ||| % defaultFilters,
@@ -83,7 +83,7 @@ local tbOverride = tbStandardOptions.override;
                 %(default)s
               }
             ) by (persistentvolume)
-            * on(persistentvolume) group_left(cluster, namespace, persistentvolumeclaim) (
+            * on(persistentvolume) group_left(%(clusterLabel)s, %(namespaceLabel)s, persistentvolumeclaim) (
               label_replace(
                 kube_persistentvolumeclaim_info{
                   %(withNamespace)s
@@ -109,7 +109,7 @@ local tbOverride = tbStandardOptions.override;
                 %(default)s
               }
             ) by (persistentvolume)
-            * on(persistentvolume) group_left(cluster, namespace, persistentvolumeclaim) (
+            * on(persistentvolume) group_left(%(clusterLabel)s, %(namespaceLabel)s, persistentvolumeclaim) (
               label_replace(
                 kube_persistentvolumeclaim_info{
                   %(withNamespace)s
@@ -128,14 +128,14 @@ local tbOverride = tbStandardOptions.override;
                 %(withNamespace)s
               }
             )
-            by (namespace, instance)
-            * on(instance) group_left()
+            by (%(namespaceLabel)s, %(instanceLabel)s)
+            * on(%(instanceLabel)s) group_left()
             (
               avg(
                 node_gpu_hourly_cost{
                   %(default)s
                 }
-              ) by (instance) * 730
+              ) by (%(instanceLabel)s) * 730
             )
           )
         ||| % defaultFilters,
@@ -162,14 +162,14 @@ local tbOverride = tbStandardOptions.override;
                     %(namespace)s,
                     %(job)s}
                 )
-                by (instance, pod)
-                * on(instance) group_left()
+                by (%(instanceLabel)s, %(podLabel)s)
+                * on(%(instanceLabel)s) group_left()
                 (
                   avg(
                     node_ram_hourly_cost{
                       %(cluster)s,
                       %(job)s}
-                  ) by (instance) / (1024 * 1024 * 1024) * 730
+                  ) by (%(instanceLabel)s) / (1024 * 1024 * 1024) * 730
                 )
               )
               +
@@ -180,16 +180,16 @@ local tbOverride = tbStandardOptions.override;
                     %(namespace)s,
                     %(job)s}
                 )
-                by (instance, pod)
-                * on(instance) group_left()
+                by (%(instanceLabel)s, %(podLabel)s)
+                * on(%(instanceLabel)s) group_left()
                 (
                   avg(
                     node_cpu_hourly_cost{
                       %(cluster)s,
                       %(job)s}
-                  ) by (instance) * 730)
+                  ) by (%(instanceLabel)s) * 730)
               )
-            ) by (pod)
+            ) by (%(podLabel)s)
           )
         ||| % defaultFilters,
         podMonthlyCostOffset7d: std.strReplace(queries.podMonthlyCost, 'job="$job"}', 'job="$job"} offset 7d'),
@@ -226,14 +226,14 @@ local tbOverride = tbStandardOptions.override;
                     %(namespace)s,
                     %(job)s}
                 )
-                by (instance, container)
-                * on(instance) group_left()
+                by (%(instanceLabel)s, container)
+                * on(%(instanceLabel)s) group_left()
                 (
                   avg(
                     node_ram_hourly_cost{
                       %(cluster)s,
                       %(job)s}
-                  ) by (instance) / (1024 * 1024 * 1024) * 730
+                  ) by (%(instanceLabel)s) / (1024 * 1024 * 1024) * 730
                 )
               )
               +
@@ -244,14 +244,14 @@ local tbOverride = tbStandardOptions.override;
                     %(namespace)s,
                     %(job)s}
                 )
-                by (instance, container)
-                * on(instance) group_left()
+                by (%(instanceLabel)s, container)
+                * on(%(instanceLabel)s) group_left()
                 (
                   avg(
                     node_cpu_hourly_cost{
                       %(cluster)s,
                       %(job)s}
-                  ) by (instance) * 730
+                  ) by (%(instanceLabel)s) * 730
                 )
               )
             ) by (container)
@@ -285,16 +285,16 @@ local tbOverride = tbStandardOptions.override;
           sum(
             sum(
               kube_persistentvolume_capacity_bytes{
-                cluster="$cluster",
-                job="$job"
+                %(cluster)s,
+                %(job)s
               } / (1024 * 1024 * 1024)
             ) by (persistentvolume)
-            * on(persistentvolume) group_left(cluster, namespace, persistentvolumeclaim)
+            * on(persistentvolume) group_left(%(clusterLabel)s, %(namespaceLabel)s, persistentvolumeclaim)
               label_replace(
                 kube_persistentvolumeclaim_info{
-                  cluster="$cluster",
-                  job="$job",
-                  namespace="$namespace"
+                  %(cluster)s,
+                  %(job)s,
+                  %(namespace)s
                 },
                 "persistentvolume", "$1",
                 "volumename", "(.*)"
@@ -462,13 +462,13 @@ local tbOverride = tbStandardOptions.override;
               tbQueryOptions.transformation.withOptions(
                 {
                   renameByName: {
-                    pod: 'Pod',
+                    [$._config.podLabel]: 'Pod',
                     'Value #A': 'Monthly Cost',
                     'Value #B': 'Cost Change vs 7d Ago (%)',
                     'Value #C': 'Cost Change vs 30d Ago (%)',
                   },
                   indexByName: {
-                    pod: 0,
+                    [$._config.podLabel]: 0,
                     'Value #A': 1,
                     'Value #B': 2,
                     'Value #C': 3,
@@ -515,7 +515,7 @@ local tbOverride = tbStandardOptions.override;
             [
               {
                 expr: queries.podMonthlyCost,
-                legend: '{{ pod }}',
+                legend: '{{ %s }}' % $._config.podLabel,
               },
             ],
             values=['percent', 'value'],
@@ -651,7 +651,7 @@ local tbOverride = tbStandardOptions.override;
                   excludeByName: {
                     Time: true,
                     job: true,
-                    namespace: true,
+                    [$._config.namespaceLabel]: true,
                   },
                 }
               ),
