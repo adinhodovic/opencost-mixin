@@ -17,6 +17,7 @@ local query = variable.query;
     clusterLabel: config.clusterLabel,
     namespaceLabel: config.namespaceLabel,
     podLabel: config.podLabel,
+    containerLabel: config.containerLabel,
     instanceLabel: config.instanceLabel,
 
     base: |||

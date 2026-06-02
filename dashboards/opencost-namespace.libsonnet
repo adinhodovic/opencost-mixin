@@ -226,7 +226,7 @@ local tbOverride = tbStandardOptions.override;
                     %(namespace)s,
                     %(job)s}
                 )
-                by (%(instanceLabel)s, container)
+                by (%(instanceLabel)s, %(containerLabel)s)
                 * on(%(instanceLabel)s) group_left()
                 (
                   avg(
@@ -244,7 +244,7 @@ local tbOverride = tbStandardOptions.override;
                     %(namespace)s,
                     %(job)s}
                 )
-                by (%(instanceLabel)s, container)
+                by (%(instanceLabel)s, %(containerLabel)s)
                 * on(%(instanceLabel)s) group_left()
                 (
                   avg(
@@ -254,7 +254,7 @@ local tbOverride = tbStandardOptions.override;
                   ) by (%(instanceLabel)s) * 730
                 )
               )
-            ) by (container)
+            ) by (%(containerLabel)s)
           )
         ||| % defaultFilters,
         containerMonthlyCostOffset7d: std.strReplace(queries.containerMonthlyCost, 'job="$job"}', 'job="$job"} offset 7d'),
@@ -552,13 +552,13 @@ local tbOverride = tbStandardOptions.override;
               tbQueryOptions.transformation.withOptions(
                 {
                   renameByName: {
-                    container: 'Container',
+                    [$._config.containerLabel]: 'Container',
                     'Value #A': 'Monthly Cost',
                     'Value #B': 'Cost Change vs 7d Ago (%)',
                     'Value #C': 'Cost Change vs 30d Ago (%)',
                   },
                   indexByName: {
-                    container: 0,
+                    [$._config.containerLabel]: 0,
                     'Value #A': 1,
                     'Value #B': 2,
                     'Value #C': 3,
@@ -605,7 +605,7 @@ local tbOverride = tbStandardOptions.override;
             [
               {
                 expr: queries.containerMonthlyCost,
-                legend: '{{ container }}',
+                legend: '{{ %s }}' % $._config.containerLabel,
               },
             ],
             values=['percent', 'value'],
