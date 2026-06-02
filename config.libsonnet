@@ -24,6 +24,7 @@ local annotation = g.dashboard.annotation;
     clusterLabel: 'cluster',
     namespaceLabel: 'namespace',
     podLabel: 'pod',
+    containerLabel: 'container',
     instanceLabel: 'instance',
 
     grafanaUrl: 'https://grafana.com',
