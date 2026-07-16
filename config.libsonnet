@@ -21,6 +21,8 @@ local annotation = g.dashboard.annotation;
 
     // Opt-in to multiCluster dashboards by overriding this and the clusterLabel.
     showMultiCluster: false,
+    multiClusterAllowsMultipleSelection: false,
+    multiClusterIncludeAllValue: false,
     clusterLabel: 'cluster',
     namespaceLabel: 'namespace',
     podLabel: 'pod',
