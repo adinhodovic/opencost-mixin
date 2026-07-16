@@ -587,7 +587,17 @@ local tbOverride = tbStandardOptions.override;
                   },
                 }
               ),
-            ]
+            ],
+            overrides=(
+              if std.all([$._config.showMultiCluster, !$._config.multiClusterAllowsMultipleSelection])
+              then
+                [
+                  tbOverride.byName.new('cluster') +
+                  tbOverride.byName.withProperty('custom.hideFrom.viz', true),
+                ]
+              else
+                []
+            )
           ),
 
         pvTable:
