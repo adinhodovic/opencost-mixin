@@ -265,8 +265,8 @@ local tbOverride = tbStandardOptions.override;
                 container_memory_allocation_bytes{
                   %(cluster)s,
                   %(job)s}
-              ) by (%(namespaceLabel)s, %(instanceLabel)s)
-              * on(%(instanceLabel)s) group_left()
+              ) by (%(clusterLabel)s, %(namespaceLabel)s, %(instanceLabel)s)
+              * on(%(clusterLabel)s, %(instanceLabel)s) group_left()
                 (
                   node_ram_hourly_cost{
                     %(cluster)s,
@@ -277,14 +277,14 @@ local tbOverride = tbStandardOptions.override;
                 container_cpu_allocation{
                   %(cluster)s,
                   %(job)s}
-              ) by (%(namespaceLabel)s, %(instanceLabel)s)
-              * on(%(instanceLabel)s) group_left()
+              ) by (%(clusterLabel)s, %(namespaceLabel)s, %(instanceLabel)s)
+              * on(%(clusterLabel)s, %(instanceLabel)s) group_left()
                 (
                   node_cpu_hourly_cost{
                     %(cluster)s,
                     %(job)s} * 730
                 )
-            ) by (%(namespaceLabel)s)
+            ) by (%(clusterLabel)s, %(namespaceLabel)s)
           )
         ||| % defaultFilters,
 
@@ -663,7 +663,7 @@ local tbOverride = tbStandardOptions.override;
                 expr: queries.costDifference7d,
               },
               {
-                expr: queries.costDifference7d,
+                expr: queries.costDifference30d,
               },
             ],
             description='Top 10 namespaces by current monthly cost with percentage change compared to 7 days and 30 days ago. Positive percentages indicate cost increases (red), negative percentages indicate cost decreases (green). Click on a namespace name to drill down into detailed pod and container costs. Use this to track namespace-level spending trends and identify teams or applications with growing costs.',
@@ -722,12 +722,21 @@ local tbOverride = tbStandardOptions.override;
                   tbPanelOptions.link.withTitle('Go To Namespace') +
                   tbPanelOptions.link.withType('dashboard') +
                   tbPanelOptions.link.withUrl(
-                    '/d/%s/opencost-namespace?var-job=$job&var-namespace=${__data.fields.Namespace}' % $._config.dashboardIds['opencost-namespace']
+                    '/d/%s/opencost-namespace?var-cluster=${__data.fields.cluster}&var-job=$job&var-namespace=${__data.fields.Namespace}' % $._config.dashboardIds['opencost-namespace']
                   ) +
                   tbPanelOptions.link.withTargetBlank(true)
                 )
               ),
-            ],
+            ] + (
+              if std.all([$._config.showMultiCluster, !$._config.multiClusterAllowsMultipleSelection])
+              then
+                [
+                  tbOverride.byName.new('cluster') +
+                  tbOverride.byName.withProperty('custom.hideFrom.viz', true),
+                ]
+              else
+                []
+            ),
             steps=[
               tbStandardOptions.threshold.step.withValue(0) +
               tbStandardOptions.threshold.step.withColor('green'),
