@@ -303,6 +303,29 @@ local tbOverride = tbStandardOptions.override;
         ||| % defaultFilters,
         pvMonthlyCostByPv: std.strReplace(queries.monthlyPVCost, '* 730', 'by (persistentvolume) * 730'),
         pvcMonthlyCostByClaim: std.strReplace(queries.monthlyPVCost, '* 730', 'by (persistentvolumeclaim) * 730'),
+
+        // Allocation efficiency queries. OpenCost does not export native efficiency
+        // metrics, so the recording rules use OpenCost allocation metrics as
+        // denominators. This is close to the OpenCost model, but not exact UI/API
+        // parity because native CPUEfficiency/RAMEfficiency use request averages.
+        // Backed by the opencost.rules.efficiency recording rules shipped here.
+        // The recording rules aggregate by (cluster, namespace) so the job label is not
+        // present; queries below select by cluster+namespace only.
+        namespaceCpuEfficiency: 'namespace:efficiency_cpu:ratio{%(cluster)s, %(namespace)s}' % defaultFilters,
+        namespaceRamEfficiency: 'namespace:efficiency_ram:ratio{%(cluster)s, %(namespace)s}' % defaultFilters,
+        namespaceTotalEfficiency: 'namespace:efficiency_total:ratio{%(cluster)s, %(namespace)s}' % defaultFilters,
+
+        workloadCpuEfficiencyBottomN: |||
+          bottomk(10,
+            workload:efficiency_cpu:ratio{%(cluster)s, %(namespace)s}
+          )
+        ||| % defaultFilters,
+
+        workloadRamEfficiencyBottomN: |||
+          bottomk(10,
+            workload:efficiency_ram:ratio{%(cluster)s, %(namespace)s}
+          )
+        ||| % defaultFilters,
       };
 
       local panels = {
@@ -677,6 +700,71 @@ local tbOverride = tbStandardOptions.override;
             values=['percent', 'value'],
             description='Distribution of monthly storage costs across Persistent Volume Claims in the namespace. This shows which claims consume the most storage budget and helps identify whether storage costs are concentrated in a few large claims or distributed across many smaller ones.',
           ),
+
+        cpuEfficiencyStat:
+          dashboards.statPanel(
+            'CPU Efficiency',
+            'percentunit',
+            queries.namespaceCpuEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='CPU usage / OpenCost-exported CPU allocation for the selected namespace. Values well below 1.0 indicate allocated CPU that is not being actively used. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based CPUEfficiency.',
+          ) +
+          util.efficiencyStatThresholds($._config),
+
+        ramEfficiencyStat:
+          dashboards.statPanel(
+            'RAM Efficiency',
+            'percentunit',
+            queries.namespaceRamEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='Working-set RAM / OpenCost-exported RAM allocation for the selected namespace. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based RAMEfficiency.',
+          ) +
+          util.efficiencyStatThresholds($._config),
+
+        totalEfficiencyStat:
+          dashboards.statPanel(
+            'Total Efficiency',
+            'percentunit',
+            queries.namespaceTotalEfficiency,
+            graphMode='none',
+            decimals=2,
+            description='Namespace total allocation efficiency combining CPU and RAM with CPU/RAM cost weights. This is based on OpenCost metrics, but is not exact OpenCost UI/API request-based TotalEfficiency.',
+          ) +
+          util.efficiencyStatThresholds($._config),
+
+        workloadCpuEfficiencyTimeSeries:
+          dashboards.timeSeriesPanel(
+            'CPU Efficiency by Workload (Bottom 10)',
+            'percentunit',
+            [
+              {
+                expr: queries.workloadCpuEfficiencyBottomN,
+                legend: '{{workload_type}}/{{workload}}',
+                interval: $._config.dashboardMinInterval,
+              },
+            ],
+            calcs=['min', 'mean', 'max'],
+            description='Bottom 10 workloads inside the selected namespace by CPU allocation efficiency. Low values indicate workloads that have been allocated more CPU than they are actively using.',
+          ) +
+          util.efficiencyTimeSeriesThresholdLine($._config),
+
+        workloadRamEfficiencyTimeSeries:
+          dashboards.timeSeriesPanel(
+            'RAM Efficiency by Workload (Bottom 10)',
+            'percentunit',
+            [
+              {
+                expr: queries.workloadRamEfficiencyBottomN,
+                legend: '{{workload_type}}/{{workload}}',
+                interval: $._config.dashboardMinInterval,
+              },
+            ],
+            calcs=['min', 'mean', 'max'],
+            description='Bottom 10 workloads inside the selected namespace by RAM allocation efficiency.',
+          ) +
+          util.efficiencyTimeSeriesThresholdLine($._config),
       };
 
       local rows =
@@ -724,15 +812,43 @@ local tbOverride = tbStandardOptions.override;
         ) +
         [
           row.new(
-            'Pod Summary',
+            'Efficiency',
           ) +
           row.gridPos.withX(0) +
           row.gridPos.withY(23) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
+        ] +
+        grid.wrapPanels(
+          [
+            panels.cpuEfficiencyStat,
+            panels.ramEfficiencyStat,
+            panels.totalEfficiencyStat,
+          ],
+          panelWidth=8,
+          panelHeight=3,
+          startY=24
+        ) +
+        grid.wrapPanels(
+          [
+            panels.workloadCpuEfficiencyTimeSeries,
+            panels.workloadRamEfficiencyTimeSeries,
+          ],
+          panelWidth=12,
+          panelHeight=5,
+          startY=27
+        ) +
+        [
+          row.new(
+            'Pod Summary',
+          ) +
+          row.gridPos.withX(0) +
+          row.gridPos.withY(32) +
+          row.gridPos.withW(24) +
+          row.gridPos.withH(1),
           panels.podTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(24) +
+          tablePanel.gridPos.withY(33) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
         ] +
@@ -741,12 +857,12 @@ local tbOverride = tbStandardOptions.override;
             'Container Summary',
           ) +
           row.gridPos.withX(0) +
-          row.gridPos.withY(34) +
+          row.gridPos.withY(43) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.containerTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(35) +
+          tablePanel.gridPos.withY(44) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
         ] +
@@ -755,12 +871,12 @@ local tbOverride = tbStandardOptions.override;
             'PV Summary',
           ) +
           row.gridPos.withX(0) +
-          row.gridPos.withY(45) +
+          row.gridPos.withY(54) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
           panels.pvTable +
           tablePanel.gridPos.withX(0) +
-          tablePanel.gridPos.withY(46) +
+          tablePanel.gridPos.withY(55) +
           tablePanel.gridPos.withW(24) +
           tablePanel.gridPos.withH(10),
         ];
