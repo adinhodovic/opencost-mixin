@@ -69,3 +69,25 @@ The mixin has all components enabled by default and all the dashboards are gener
 ## Alerts
 
 The mixin follows the [monitoring-mixins guidelines](https://github.com/monitoring-mixins/docs#guidelines-for-alert-names-labels-and-annotations) for alerts.
+
+
+## OpenShift Compatibility
+
+Recent OpenShift releases use a managed Prometheus configuration that rewrites several metric labels when scraping workloads. For example:
+
+- namespace → exported_namespace
+- pod → exported_pod
+- container → exported_container
+- instance → exported_instance
+
+OpenCost queries rely on the original label names to associate resource usage with namespaces, pods, and containers. Because these labels are rewritten by OpenShift, the default dashboard queries no longer return the expected data. This issue has also been observed with other managed Prometheus offerings. While it can often be resolved by enabling honorLabels: true, OpenShift does not support this option for user workload metrics collected through PodMonitor and ServiceMonitor resources.
+
+To make the dashboards compatible with OpenShift, update the label mappings in `config.libsonnet` and regenerate the dashboards.
+
+```jsonnet
+clusterLabel: 'cluster'
+namespaceLabel: 'exported_namespace'
+podLabel: 'exported_pod'
+containerLabel: 'exported_container'
+instanceLabel: 'exported_instance'
+```
