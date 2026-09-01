@@ -286,7 +286,7 @@ local tbOverride = tbStandardOptions.override;
         ||| % defaultFilters,
 
         monthlyCostOffset7d: std.strReplace(queries.namespaceMonthlyCost, defaultFilters.opencostJob + '\n}', defaultFilters.opencostJob + '\n} offset 7d'),
-        monthlyCostOffset30d: std.strReplace(queries.namespaceMonthlyCost, defaultFilters.opencostJob + '\n}', defaultFilters.opencostJob + '\n} offset 30d'),        
+        monthlyCostOffset30d: std.strReplace(queries.namespaceMonthlyCost, defaultFilters.opencostJob + '\n}', defaultFilters.opencostJob + '\n} offset 30d'),
         costDifference7d: |||
           %s
           /

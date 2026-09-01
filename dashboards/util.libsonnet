@@ -15,7 +15,7 @@ local extractJobName(selector) =
   filters(config):: {
     local this = self,
     cluster: '%(clusterLabel)s="$cluster"' % config,
-    
+
     opencostJob: 'job="$opencost_job"',
     ksmJob: 'job="$ksm_job"',
 
