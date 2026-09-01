@@ -51,7 +51,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -99,7 +99,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -147,7 +147,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -195,7 +195,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -243,7 +243,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -291,7 +291,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -329,7 +329,7 @@
          "description": "Top workloads by projected monthly cost in the current namespace and filter scope. Each slice is a `workload_type / workload` pair.",
          "fieldConfig": {
             "defaults": {
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -381,7 +381,7 @@
          "description": "Projected monthly cost grouped by workload type for the current namespace and filter scope.",
          "fieldConfig": {
             "defaults": {
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -433,7 +433,7 @@
          "description": "Monthly cost distribution for the selected workload scope across compute, memory, storage, and GPU. Use this to see which resource category is driving the projected monthly spend.",
          "fieldConfig": {
             "defaults": {
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -520,7 +520,7 @@
                      "mode": "normal"
                   }
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -580,7 +580,7 @@
                      "mode": "normal"
                   }
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -678,7 +678,7 @@
                "thresholds": {
                   "steps": [ ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -808,7 +808,7 @@
                "thresholds": {
                   "steps": [ ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -893,8 +893,10 @@
                "type": "prometheus",
                "uid": "${datasource}"
             },
-            "hide": 2,
+            "hide": 0,
+            "includeAll": true,
             "label": "Cluster",
+            "multi": true,
             "name": "cluster",
             "query": "label_values(opencost_build_info{}, cluster)",
             "refresh": 2,
@@ -924,7 +926,7 @@
             "label": "KSM Job",
             "multi": false,
             "name": "ksm_job",
-            "query": "label_values(opencost_build_info{cluster=\"$cluster\"}, job)",
+            "query": "label_values(kube_node_status_capacity{cluster=\"$cluster\"}, job)",
             "refresh": 2,
             "sort": 1,
             "type": "query"

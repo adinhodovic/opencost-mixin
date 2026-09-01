@@ -19,6 +19,8 @@ local annotation = g.dashboard.annotation;
     openCostSelector: 'job="opencost"',
     kubeStateMetricsSelector: 'job="kube-state-metrics"',
 
+    dashboardCurrencyUnit: 'currencyUSD',
+
     // Default datasource name
     datasourceName: 'default',
 

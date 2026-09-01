@@ -179,7 +179,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         hourlyCostStat:
           dashboards.statPanel(
             'Hourly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.hourlyCost,
             graphMode='none',
             decimals=2,
@@ -189,7 +189,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         dailyCostStat:
           dashboards.statPanel(
             'Daily Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.dailyCost,
             graphMode='none',
             decimals=2,
@@ -199,7 +199,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyCostStat:
           dashboards.statPanel(
             'Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyCost,
             graphMode='none',
             decimals=2,
@@ -209,7 +209,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyRamCostStat:
           dashboards.statPanel(
             'Monthly Ram Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyRamCost,
             graphMode='none',
             decimals=2,
@@ -219,7 +219,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyCpuCostStat:
           dashboards.statPanel(
             'Monthly CPU Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyCpuCost,
             graphMode='none',
             decimals=2,
@@ -229,7 +229,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyPVCostStat:
           dashboards.statPanel(
             'Monthly PV Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyPVCost,
             graphMode='none',
             decimals=2,
@@ -239,7 +239,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyGPUCostStat:
           dashboards.statPanel(
             'Monthly GPU Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyGPUCost,
             graphMode='none',
             decimals=2,
@@ -249,7 +249,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyCostByWorkloadTimeSeries:
           dashboards.timeSeriesPanel(
             'Monthly Cost by Workload',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: 'topk(10, %s)' % queries.monthlyCostByWorkload,
@@ -264,7 +264,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyCostByResourceTimeSeries:
           dashboards.timeSeriesPanel(
             'Monthly Cost by Resource',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: 'sum((%s) * 730) or vector(0)' % queries.hourlyRamCostByWorkload,
@@ -294,7 +294,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         resourceCostPieChart:
           dashboards.pieChartPanel(
             'Cost by Resource',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.monthlyCpuCost,
@@ -320,7 +320,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         workloadCostPieChart:
           dashboards.pieChartPanel(
             'Cost by Workload',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             'topk(10, %s)' % queries.monthlyCostByWorkload,
             '{{ workload_type }} / {{ workload }}',
             values=['percent', 'value'],
@@ -330,7 +330,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         workloadTypeCostPieChart:
           dashboards.pieChartPanel(
             'Cost by Workload Type',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyCostByWorkloadType,
             '{{ workload_type }}',
             values=['percent', 'value'],
@@ -340,7 +340,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         workloadTable:
           dashboards.tablePanel(
             'Workload Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.monthlyRamCostByWorkload,
@@ -403,7 +403,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         pvcTable:
           dashboards.tablePanel(
             'Persistent Volume Claims Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.pvcMonthlyCostByClaim,

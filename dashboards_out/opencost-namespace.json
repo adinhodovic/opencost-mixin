@@ -51,7 +51,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -99,7 +99,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -147,7 +147,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -195,7 +195,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -243,7 +243,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -291,7 +291,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -332,7 +332,7 @@
                "custom": {
                   "fillOpacity": 10
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -387,7 +387,7 @@
                "custom": {
                   "fillOpacity": 10
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -439,7 +439,7 @@
          "description": "Monthly cost distribution for the selected namespace across resource types (CPU, RAM, Persistent Volumes, and GPU). This shows which resource category is the primary cost driver for this namespace, helping teams prioritize their optimization efforts.",
          "fieldConfig": {
             "defaults": {
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -518,7 +518,7 @@
          "description": "Top 10 pods by monthly cost showing the distribution of spending across pods in the namespace. This visualization helps identify which pods consume the most resources and whether costs are evenly distributed or concentrated in a few workloads.",
          "fieldConfig": {
             "defaults": {
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -570,7 +570,7 @@
          "description": "Top 10 containers by monthly cost showing the distribution of spending across containers in the namespace. This helps identify which container images or workload types are most expensive and whether sidecar containers are adding significant costs.",
          "fieldConfig": {
             "defaults": {
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -622,7 +622,7 @@
          "description": "Distribution of monthly storage costs across Persistent Volume Claims in the namespace. This shows which claims consume the most storage budget and helps identify whether storage costs are concentrated in a few large claims or distributed across many smaller ones.",
          "fieldConfig": {
             "defaults": {
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [ ]
          },
@@ -703,7 +703,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [
                {
@@ -870,7 +870,7 @@
                      }
                   ]
                },
-               "unit": "currencyUSD"
+               "unit": "currencyEUR"
             },
             "overrides": [
                {
@@ -1035,7 +1035,7 @@
                   "properties": [
                      {
                         "id": "unit",
-                        "value": "currencyUSD"
+                        "value": "currencyEUR"
                      }
                   ]
                }
@@ -1132,8 +1132,10 @@
                "type": "prometheus",
                "uid": "${datasource}"
             },
-            "hide": 2,
+            "hide": 0,
+            "includeAll": true,
             "label": "Cluster",
+            "multi": true,
             "name": "cluster",
             "query": "label_values(opencost_build_info{}, cluster)",
             "refresh": 2,
@@ -1163,7 +1165,7 @@
             "label": "KSM Job",
             "multi": false,
             "name": "ksm_job",
-            "query": "label_values(opencost_build_info{cluster=\"$cluster\"}, job)",
+            "query": "label_values(kube_node_status_capacity{cluster=\"$cluster\"}, job)",
             "refresh": 2,
             "sort": 1,
             "type": "query"

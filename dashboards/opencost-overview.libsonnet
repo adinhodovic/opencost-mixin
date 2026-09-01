@@ -351,7 +351,7 @@ local tbOverride = tbStandardOptions.override;
         hourlyCostStat:
           dashboards.statPanel(
             'Hourly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.hourlyCost,
             graphMode='none',
             decimals=2,
@@ -363,7 +363,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyCostStat:
           dashboards.statPanel(
             'Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyCost,
             graphMode='none',
             decimals=2,
@@ -375,7 +375,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyRamCostStat:
           dashboards.statPanel(
             'Monthly Ram Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyRamCost,
             graphMode='none',
             decimals=2,
@@ -387,7 +387,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyCpuCostStat:
           dashboards.statPanel(
             'Monthly CPU Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyCpuCost,
             graphMode='none',
             decimals=2,
@@ -399,7 +399,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyPVCostStat:
           dashboards.statPanel(
             'Monthly PV Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyPVCost,
             graphMode='none',
             decimals=2,
@@ -411,7 +411,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyGPUCostStat:
           dashboards.statPanel(
             'Monthly GPU Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyGPUCost,
             graphMode='none',
             decimals=2,
@@ -423,7 +423,7 @@ local tbOverride = tbStandardOptions.override;
         hourCostTimeSeries:
           dashboards.timeSeriesPanel(
             'Hourly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.hourlyCost,
             'Hourly Cost',
             description='Hourly cost trend over time showing how infrastructure spending fluctuates throughout the day. Use this to identify cost spikes, correlate costs with workload patterns, and detect autoscaling behavior impact on spending.',
@@ -432,7 +432,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyCostTimeSeries:
           dashboards.timeSeriesPanel(
             'Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.monthlyCost,
@@ -489,7 +489,7 @@ local tbOverride = tbStandardOptions.override;
         resourceCostPieChartPanel:
           dashboards.pieChartPanel(
             'Cost by Resource',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.monthlyCpuCost,
@@ -515,7 +515,7 @@ local tbOverride = tbStandardOptions.override;
         namespaceCostPieChartPanel:
           dashboards.pieChartPanel(
             'Cost by Namespace',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.namespaceMonthlyCost,
             '{{ %s }}' % $._config.namespaceLabel,
             description='Top 10 namespaces by monthly cost showing which teams, applications, or environments consume the most resources. Use this to allocate costs to teams, identify expensive applications, and ensure fair resource distribution across the organization.',
@@ -525,7 +525,7 @@ local tbOverride = tbStandardOptions.override;
         instanceTypeCostPieChartPanel:
           dashboards.pieChartPanel(
             'Cost by Instance Type',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.instanceTypeCost,
             '{{ instance_type }}',
             description='Top 10 instance types by monthly cost showing which VM/node types contribute most to infrastructure spending. This helps evaluate whether your instance type selection is cost-effective and identify opportunities to switch to more economical instance families.',
@@ -535,7 +535,7 @@ local tbOverride = tbStandardOptions.override;
         nodeTable:
           dashboards.tablePanel(
             'Nodes Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.nodeMonthlyCpuCost,
@@ -642,7 +642,7 @@ local tbOverride = tbStandardOptions.override;
             overrides=[
               tbOverride.byName.new('Total Cost') +
               tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('currencyUSD')
+                tbStandardOptions.withUnit($._config.dashboardCurrencyUnit)
               ),
             ]
           ),
@@ -650,7 +650,7 @@ local tbOverride = tbStandardOptions.override;
         namespaceTable:
           dashboards.tablePanel(
             'Namespace Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.namespaceMonthlyCost,
