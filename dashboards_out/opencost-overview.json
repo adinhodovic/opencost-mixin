@@ -51,7 +51,7 @@
                      }
                   ]
                },
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -99,7 +99,7 @@
                      }
                   ]
                },
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -147,7 +147,7 @@
                      }
                   ]
                },
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -195,7 +195,7 @@
                      }
                   ]
                },
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -243,7 +243,7 @@
                      }
                   ]
                },
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -291,7 +291,7 @@
                      }
                   ]
                },
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -329,7 +329,7 @@
          "description": "Monthly cost distribution across resource types (CPU, RAM, Persistent Volumes, and GPU). This breakdown shows which resource category consumes the most budget, helping prioritize optimization efforts.",
          "fieldConfig": {
             "defaults": {
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -408,7 +408,7 @@
          "description": "Top 10 namespaces by monthly cost showing which teams, applications, or environments consume the most resources. Use this to allocate costs to teams, identify expensive applications, and ensure fair resource distribution across the organization.",
          "fieldConfig": {
             "defaults": {
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -460,7 +460,7 @@
          "description": "Top 10 instance types by monthly cost showing which VM/node types contribute most to infrastructure spending. This helps evaluate whether your instance type selection is cost-effective and identify opportunities to switch to more economical instance families.",
          "fieldConfig": {
             "defaults": {
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -515,7 +515,7 @@
                "custom": {
                   "fillOpacity": 10
                },
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -569,7 +569,7 @@
                "custom": {
                   "fillOpacity": 10
                },
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -777,7 +777,7 @@
                "thresholds": {
                   "steps": [ ]
                },
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [ ]
          },
@@ -885,7 +885,7 @@
                   "properties": [
                      {
                         "id": "unit",
-                        "value": "currencyEUR"
+                        "value": "currencyUSD"
                      }
                   ]
                }
@@ -994,7 +994,7 @@
                      }
                   ]
                },
-               "unit": "currencyEUR"
+               "unit": "currencyUSD"
             },
             "overrides": [
                {
@@ -1167,10 +1167,8 @@
                "type": "prometheus",
                "uid": "${datasource}"
             },
-            "hide": 0,
-            "includeAll": true,
+            "hide": 2,
             "label": "Cluster",
-            "multi": true,
             "name": "cluster",
             "query": "label_values(opencost_build_info{}, cluster)",
             "refresh": 2,
@@ -1200,7 +1198,7 @@
             "label": "KSM Job",
             "multi": false,
             "name": "ksm_job",
-            "query": "label_values(kube_node_status_capacity{cluster=\"$cluster\"}, job)",
+            "query": "label_values(opencost_build_info{cluster=\"$cluster\"}, job)",
             "refresh": 2,
             "sort": 1,
             "type": "query"
