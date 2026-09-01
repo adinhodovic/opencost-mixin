@@ -924,7 +924,7 @@
             "label": "KSM Job",
             "multi": false,
             "name": "ksm_job",
-            "query": "label_values(opencost_build_info{cluster=\"$cluster\"}, job)",
+            "query": "label_values(kube_node_status_capacity{cluster=\"$cluster\"}, job)",
             "refresh": 2,
             "sort": 1,
             "type": "query"

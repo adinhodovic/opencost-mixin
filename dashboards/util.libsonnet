@@ -117,24 +117,12 @@ local extractJobName(selector) =
         custom.generalOptions.withLabel('OpenCost Job'),
 
     ksmJob:
-      local ksmMetric =
-        if config.dashboardUseDedicatedKSMJob then
-          'kube_node_status_capacity{%(clusterLabel)s="$cluster"}' % config
-        else
-          'opencost_build_info{%(clusterLabel)s="$cluster"}' % config;
-
-      local ksmSelector =
-        if config.dashboardUseDedicatedKSMJob then
-          config.kubeStateMetricsSelector
-        else
-          config.openCostSelector;
-
       if config.dashboardDynamicJobDiscovery then
         query.new('ksm_job') +
         query.withDatasourceFromVariable(this.datasource) +
         query.queryTypes.withLabelValues(
           'job',
-          ksmMetric,
+          'kube_node_status_capacity{%(clusterLabel)s="$cluster"}' % config,
         ) +
         query.withSort() +
         query.generalOptions.withLabel('KSM Job') +
@@ -145,7 +133,7 @@ local extractJobName(selector) =
       else
         custom.new(
           'ksm_job',
-          [extractJobName(ksmSelector)]
+          [extractJobName(config.kubeStateMetricsSelector)]
         ) +
         custom.generalOptions.withLabel('KSM Job'),
 
