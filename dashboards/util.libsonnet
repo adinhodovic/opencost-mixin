@@ -3,14 +3,22 @@ local g = import 'github.com/grafana/grafonnet/gen/grafonnet-latest/main.libsonn
 local dashboard = g.dashboard;
 
 local variable = dashboard.variable;
+local custom = variable.custom;
 local datasource = variable.datasource;
 local query = variable.query;
+
+local extractJobName(selector) =
+  local cleaned = std.strReplace(selector, 'job="', '');
+  std.strReplace(cleaned, '"', '');
 
 {
   filters(config):: {
     local this = self,
     cluster: '%(clusterLabel)s="$cluster"' % config,
-    job: 'job="$job"',
+    
+    opencostJob: 'job="$opencost_job"',
+    ksmJob: 'job="$ksm_job"',
+
     namespace: '%(namespaceLabel)s="$namespace"' % config,
     workloadType: 'workload_type=~"$workload_type"',
     workload: 'workload=~"$workload"',
@@ -20,18 +28,23 @@ local query = variable.query;
     containerLabel: config.containerLabel,
     instanceLabel: config.instanceLabel,
 
-    base: |||
+    opencostDefault: |||
       %(cluster)s,
-      %(job)s
+      %(opencostJob)s
     ||| % this,
 
-    default: |||
-      %(cluster)s,
-      %(job)s
+    opencostWithNamespace: |||
+      %(opencostDefault)s,
+      %(namespace)s
     ||| % this,
 
-    withNamespace: |||
-      %(default)s,
+    ksmDefault: |||
+      %(cluster)s,
+      %(ksmJob)s
+    ||| % this,
+
+    ksmWithNamespace: |||
+      %(ksmDefault)s,
       %(namespace)s
     ||| % this,
 
@@ -82,25 +95,67 @@ local query = variable.query;
         else query.generalOptions.showOnDashboard.withNothing()
       ),
 
-    job:
-      query.new(
-        'job',
-        'label_values(opencost_build_info{%(cluster)s}, job)' % defaultFilters
-      ) +
-      query.withDatasourceFromVariable(this.datasource) +
-      query.withSort() +
-      query.generalOptions.withLabel('Job') +
-      query.selectionOptions.withMulti(false) +
-      query.selectionOptions.withIncludeAll(false) +
-      query.refresh.onLoad() +
-      query.refresh.onTime(),
+    opencostJob:
+      if config.dashboardDynamicJobDiscovery then
+        query.new('opencost_job') +
+        query.withDatasourceFromVariable(this.datasource) +
+        query.queryTypes.withLabelValues(
+          'job',
+          'opencost_build_info{%(clusterLabel)s="$cluster"}' % config,
+        ) +
+        query.withSort() +
+        query.generalOptions.withLabel('OpenCost Job') +
+        query.selectionOptions.withMulti(false) +
+        query.selectionOptions.withIncludeAll(false) +
+        query.refresh.onLoad() +
+        query.refresh.onTime()
+      else
+        custom.new(
+          'opencost_job',
+          [extractJobName(config.openCostSelector)]
+        ) +
+        custom.generalOptions.withLabel('OpenCost Job'),
+
+    ksmJob:
+      local ksmMetric =
+        if config.dashboardUseDedicatedKSMJob then
+          'kube_node_status_capacity{%(clusterLabel)s="$cluster"}' % config
+        else
+          'opencost_build_info{%(clusterLabel)s="$cluster"}' % config;
+
+      local ksmSelector =
+        if config.dashboardUseDedicatedKSMJob then
+          config.kubeStateMetricsSelector
+        else
+          config.openCostSelector;
+
+      if config.dashboardDynamicJobDiscovery then
+        query.new('ksm_job') +
+        query.withDatasourceFromVariable(this.datasource) +
+        query.queryTypes.withLabelValues(
+          'job',
+          ksmMetric,
+        ) +
+        query.withSort() +
+        query.generalOptions.withLabel('KSM Job') +
+        query.selectionOptions.withMulti(false) +
+        query.selectionOptions.withIncludeAll(false) +
+        query.refresh.onLoad() +
+        query.refresh.onTime()
+      else
+        custom.new(
+          'ksm_job',
+          [extractJobName(ksmSelector)]
+        ) +
+        custom.generalOptions.withLabel('KSM Job'),
 
     namespace:
-      query.new(
-        'namespace',
-        'label_values(kube_namespace_labels{%(cluster)s, %(job)s}, %(namespaceLabel)s)' % defaultFilters
-      ) +
+      query.new('namespace') +
       query.withDatasourceFromVariable(this.datasource) +
+      query.queryTypes.withLabelValues(
+        config.namespaceLabel,
+        'kube_namespace_status_phase{%(cluster)s, %(ksmJob)s}' % defaultFilters,
+      ) +
       query.withSort() +
       query.generalOptions.withLabel('Namespace') +
       query.selectionOptions.withMulti(false) +

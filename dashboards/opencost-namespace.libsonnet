@@ -22,12 +22,13 @@ local tbOverride = tbStandardOptions.override;
 
       local defaultVariables = util.variables($._config);
 
-      local variables = [
+      local variables = std.prune([
         defaultVariables.datasource,
         defaultVariables.cluster,
-        defaultVariables.job,
+        defaultVariables.opencostJob,
+        defaultVariables.ksmJob,
         defaultVariables.namespace,
-      ];
+      ]);
 
       local defaultFilters = util.filters($._config);
       local queries = {
@@ -35,7 +36,7 @@ local tbOverride = tbStandardOptions.override;
           sum(
             sum(
               container_memory_allocation_bytes{
-                %(withNamespace)s
+                %(opencostWithNamespace)s
               }
             )
             by (%(namespaceLabel)s, %(instanceLabel)s)
@@ -43,7 +44,7 @@ local tbOverride = tbStandardOptions.override;
             (
               avg(
                 node_ram_hourly_cost{
-                  %(default)s
+                  %(opencostDefault)s
                 }
               ) by (%(instanceLabel)s) / (1024 * 1024 * 1024) * 730
             )
@@ -54,7 +55,7 @@ local tbOverride = tbStandardOptions.override;
           sum(
             sum(
               container_cpu_allocation{
-                %(withNamespace)s
+                %(opencostWithNamespace)s
               }
             )
             by (%(namespaceLabel)s, %(instanceLabel)s)
@@ -62,7 +63,7 @@ local tbOverride = tbStandardOptions.override;
             (
               avg(
                 node_cpu_hourly_cost{
-                  %(default)s
+                  %(opencostDefault)s
                 }
               ) by (%(instanceLabel)s) * 730
             )
@@ -73,20 +74,20 @@ local tbOverride = tbStandardOptions.override;
           sum(
             sum(
               kube_persistentvolume_capacity_bytes{
-                %(default)s
+                %(ksmDefault)s
               }
               / (1024 * 1024 * 1024)
             ) by (persistentvolume)
             *
             sum(
               pv_hourly_cost{
-                %(default)s
+                %(opencostDefault)s
               }
             ) by (persistentvolume)
             * on(persistentvolume) group_left(%(clusterLabel)s, %(namespaceLabel)s, persistentvolumeclaim) (
               label_replace(
                 kube_persistentvolumeclaim_info{
-                  %(withNamespace)s
+                  %(ksmWithNamespace)s
                 },
                 "persistentvolume", "$1",
                 "volumename", "(.*)"
@@ -99,20 +100,20 @@ local tbOverride = tbStandardOptions.override;
           sum(
             sum(
               kube_persistentvolume_capacity_bytes{
-                %(default)s
+                %(ksmDefault)s
               }
               / (1024 * 1024 * 1024)
             ) by (persistentvolume)
             *
             sum(
               pv_hourly_cost{
-                %(default)s
+                %(opencostDefault)s
               }
             ) by (persistentvolume)
             * on(persistentvolume) group_left(%(clusterLabel)s, %(namespaceLabel)s, persistentvolumeclaim) (
               label_replace(
                 kube_persistentvolumeclaim_info{
-                  %(withNamespace)s
+                  %(ksmWithNamespace)s
                 },
                 "persistentvolume", "$1",
                 "volumename", "(.*)"
@@ -125,7 +126,7 @@ local tbOverride = tbStandardOptions.override;
           sum(
             sum(
               container_gpu_allocation{
-                %(withNamespace)s
+                %(opencostWithNamespace)s
               }
             )
             by (%(namespaceLabel)s, %(instanceLabel)s)
@@ -133,7 +134,7 @@ local tbOverride = tbStandardOptions.override;
             (
               avg(
                 node_gpu_hourly_cost{
-                  %(default)s
+                  %(opencostDefault)s
                 }
               ) by (%(instanceLabel)s) * 730
             )
@@ -158,17 +159,16 @@ local tbOverride = tbStandardOptions.override;
               (
                 sum(
                   container_memory_allocation_bytes{
-                    %(cluster)s,
-                    %(namespace)s,
-                    %(job)s}
+                    %(opencostWithNamespace)s
+                  }
                 )
                 by (%(instanceLabel)s, %(podLabel)s)
                 * on(%(instanceLabel)s) group_left()
                 (
                   avg(
                     node_ram_hourly_cost{
-                      %(cluster)s,
-                      %(job)s}
+                      %(opencostDefault)s
+                    }
                   ) by (%(instanceLabel)s) / (1024 * 1024 * 1024) * 730
                 )
               )
@@ -176,24 +176,23 @@ local tbOverride = tbStandardOptions.override;
               (
                 sum(
                   container_cpu_allocation{
-                    %(cluster)s,
-                    %(namespace)s,
-                    %(job)s}
+                    %(opencostWithNamespace)s
+                  }
                 )
                 by (%(instanceLabel)s, %(podLabel)s)
                 * on(%(instanceLabel)s) group_left()
                 (
                   avg(
                     node_cpu_hourly_cost{
-                      %(cluster)s,
-                      %(job)s}
+                      %(opencostDefault)s
+                    }
                   ) by (%(instanceLabel)s) * 730)
               )
             ) by (%(podLabel)s)
           )
         ||| % defaultFilters,
-        podMonthlyCostOffset7d: std.strReplace(queries.podMonthlyCost, 'job="$job"}', 'job="$job"} offset 7d'),
-        podMonthlyCostOffset30d: std.strReplace(queries.podMonthlyCost, 'job="$job"}', 'job="$job"} offset 30d'),
+        podMonthlyCostOffset7d: std.strReplace(queries.podMonthlyCost, '}', '} offset 7d'),
+        podMonthlyCostOffset30d: std.strReplace(queries.podMonthlyCost, '}', '} offset 30d'),
 
         podMonthlyCostDifference7d: |||
           %s
@@ -222,17 +221,16 @@ local tbOverride = tbStandardOptions.override;
               (
                 sum(
                   container_memory_allocation_bytes{
-                    %(cluster)s,
-                    %(namespace)s,
-                    %(job)s}
+                    %(opencostWithNamespace)s
+                  }
                 )
                 by (%(instanceLabel)s, %(containerLabel)s)
                 * on(%(instanceLabel)s) group_left()
                 (
                   avg(
                     node_ram_hourly_cost{
-                      %(cluster)s,
-                      %(job)s}
+                      %(opencostDefault)s
+                    }
                   ) by (%(instanceLabel)s) / (1024 * 1024 * 1024) * 730
                 )
               )
@@ -240,26 +238,24 @@ local tbOverride = tbStandardOptions.override;
               (
                 sum(
                   container_cpu_allocation{
-                    %(cluster)s,
-                    %(namespace)s,
-                    %(job)s}
+                    %(opencostWithNamespace)s
+                  }
                 )
                 by (%(instanceLabel)s, %(containerLabel)s)
                 * on(%(instanceLabel)s) group_left()
                 (
                   avg(
                     node_cpu_hourly_cost{
-                      %(cluster)s,
-                      %(job)s}
+                      %(opencostDefault)s
+                    }
                   ) by (%(instanceLabel)s) * 730
                 )
               )
             ) by (%(containerLabel)s)
           )
         ||| % defaultFilters,
-        containerMonthlyCostOffset7d: std.strReplace(queries.containerMonthlyCost, 'job="$job"}', 'job="$job"} offset 7d'),
-        containerMonthlyCostOffset30d: std.strReplace(queries.containerMonthlyCost, 'job="$job"}', 'job="$job"} offset 30d'),
-
+        containerMonthlyCostOffset7d: std.strReplace(queries.containerMonthlyCost, '}', '} offset 7d'),
+        containerMonthlyCostOffset30d: std.strReplace(queries.containerMonthlyCost, '}', '} offset 30d'),
         containerMonthlyCostDifference7d: |||
           %s
           /
@@ -285,16 +281,13 @@ local tbOverride = tbStandardOptions.override;
           sum(
             sum(
               kube_persistentvolume_capacity_bytes{
-                %(cluster)s,
-                %(job)s
+                %(ksmDefault)s
               } / (1024 * 1024 * 1024)
             ) by (persistentvolume)
             * on(persistentvolume) group_left(%(clusterLabel)s, %(namespaceLabel)s, persistentvolumeclaim)
               label_replace(
                 kube_persistentvolumeclaim_info{
-                  %(cluster)s,
-                  %(job)s,
-                  %(namespace)s
+                  %(ksmWithNamespace)s
                 },
                 "persistentvolume", "$1",
                 "volumename", "(.*)"

@@ -10,6 +10,12 @@ local annotation = g.dashboard.annotation;
       __requires: [],
     },
 
+    // Whether to determine the job labels via query in the dashboards. Set to false to use the values of openCostSelector and kubeStateMetricsSelector.
+    dashboardDynamicJobDiscovery: true,
+    // Set to true if KSM is scraped under a separate job (e.g., job="kube-state-metrics").
+    // Set to false if OpenCost emits KSM metrics under the same job as the openCost generated metrics.
+    dashboardUseDedicatedKSMJob: false,
+
     openCostSelector: 'job="opencost"',
     kubeStateMetricsSelector: 'job="kube-state-metrics"',
 

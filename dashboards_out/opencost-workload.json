@@ -907,9 +907,23 @@
                "uid": "${datasource}"
             },
             "includeAll": false,
-            "label": "Job",
+            "label": "OpenCost Job",
             "multi": false,
-            "name": "job",
+            "name": "opencost_job",
+            "query": "label_values(opencost_build_info{cluster=\"$cluster\"}, job)",
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "${datasource}"
+            },
+            "includeAll": false,
+            "label": "KSM Job",
+            "multi": false,
+            "name": "ksm_job",
             "query": "label_values(opencost_build_info{cluster=\"$cluster\"}, job)",
             "refresh": 2,
             "sort": 1,
@@ -924,7 +938,7 @@
             "label": "Namespace",
             "multi": false,
             "name": "namespace",
-            "query": "label_values(kube_namespace_labels{cluster=\"$cluster\", job=\"$job\"}, namespace)",
+            "query": "label_values(kube_namespace_status_phase{cluster=\"$cluster\", job=\"$ksm_job\"}, namespace)",
             "refresh": 2,
             "sort": 1,
             "type": "query"
