@@ -24,31 +24,32 @@ local tbOverride = tbStandardOptions.override;
 
       local defaultVariables = util.variables($._config);
 
-      local variables = [
+      local variables = std.prune([
         defaultVariables.datasource,
         defaultVariables.cluster,
-        defaultVariables.job,
-      ];
+        defaultVariables.opencostJob,
+        defaultVariables.ksmJob,
+      ]);
 
       local defaultFilters = util.filters($._config);
       local queries = {
         hourlyCost: |||
           sum(
             node_total_hourly_cost{
-              %(default)s
+              %(opencostDefault)s
             }
           )
           +
           sum(
             sum(
               kube_persistentvolume_capacity_bytes{
-                %(default)s
+                %(ksmDefault)s
               } / (1024 * 1024 * 1024)
             ) by (persistentvolume)
             * on(persistentvolume) group_left()
             sum(
               pv_hourly_cost{
-                %(default)s
+                %(opencostDefault)s
               }
             ) by (persistentvolume)
           )
@@ -59,7 +60,7 @@ local tbOverride = tbStandardOptions.override;
           sum(
             sum(
               kube_node_status_capacity{
-                %(default)s,
+                %(ksmDefault)s,
                 resource="memory",
                 unit="byte"
               }
@@ -68,7 +69,7 @@ local tbOverride = tbStandardOptions.override;
             * on(node) group_left()
               sum(
                 node_ram_hourly_cost{
-                  %(default)s
+                  %(opencostDefault)s
                 }
               ) by (node)
             * 730
@@ -79,7 +80,7 @@ local tbOverride = tbStandardOptions.override;
           sum(
             sum(
               kube_node_status_capacity{
-                %(default)s,
+                %(ksmDefault)s,
                 resource="cpu",
                 unit="core"
               }
@@ -87,7 +88,7 @@ local tbOverride = tbStandardOptions.override;
             * on(node) group_left()
               sum(
                 node_cpu_hourly_cost{
-                  %(default)s
+                  %(opencostDefault)s
                 }
               ) by (node)
             * 730
@@ -98,13 +99,13 @@ local tbOverride = tbStandardOptions.override;
           sum(
             sum(
               kube_persistentvolume_capacity_bytes{
-                %(default)s
+                %(ksmDefault)s
               } / (1024 * 1024 * 1024)
             ) by (persistentvolume)
             * on(persistentvolume) group_left()
               sum(
                 pv_hourly_cost{
-                  %(default)s
+                  %(opencostDefault)s
                 }
               ) by (persistentvolume)
           ) * 730
@@ -113,7 +114,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyGPUCost: |||
           sum(
             node_gpu_hourly_cost{
-              %(default)s
+              %(opencostDefault)s
             }
           ) * 730
         ||| % defaultFilters,
@@ -121,7 +122,7 @@ local tbOverride = tbStandardOptions.override;
         nodeMonthlyCpuCost: |||
           sum(
             kube_node_status_capacity{
-              %(default)s,
+              %(ksmDefault)s,
               resource="cpu",
               unit="core"
             }
@@ -129,7 +130,7 @@ local tbOverride = tbStandardOptions.override;
           * on(node) group_left(cluster, instance_type, arch)
             sum(
               node_cpu_hourly_cost{
-                %(default)s,
+                %(opencostDefault)s,
               }
             ) by (node, instance_type, arch)
           * 730
@@ -138,7 +139,7 @@ local tbOverride = tbStandardOptions.override;
         nodeMonthlyRamCost: |||
           sum(
             kube_node_status_capacity{
-              %(default)s,
+              %(ksmDefault)s,
               resource="memory",
               unit="byte"
             }
@@ -147,7 +148,7 @@ local tbOverride = tbStandardOptions.override;
           * on(node) group_left(cluster, instance_type, arch)
             sum(
               node_ram_hourly_cost{
-                %(default)s
+                %(opencostDefault)s
               }
             ) by (node, instance_type, arch)
           * 730
@@ -158,7 +159,7 @@ local tbOverride = tbStandardOptions.override;
             avg_over_time(
               sum(
                 node_total_hourly_cost{
-                  %(default)s
+                  %(opencostDefault)s
                 }
               ) [1d:1h]
             )
@@ -166,7 +167,7 @@ local tbOverride = tbStandardOptions.override;
             avg_over_time(
               sum(
                 node_total_hourly_cost{
-                  %(default)s
+                  %(opencostDefault)s
                 }
               ) [7d:1h]
             )
@@ -175,7 +176,7 @@ local tbOverride = tbStandardOptions.override;
           avg_over_time(
             sum(
               node_total_hourly_cost{
-                %(default)s
+                %(opencostDefault)s
               }
             ) [7d:1h]
           )
@@ -186,7 +187,7 @@ local tbOverride = tbStandardOptions.override;
             avg_over_time(
               sum(
                 node_total_hourly_cost{
-                  %(default)s
+                  %(opencostDefault)s
                 }
               ) [1d:1h]
             )
@@ -194,7 +195,7 @@ local tbOverride = tbStandardOptions.override;
             avg_over_time(
               sum(
                 node_total_hourly_cost{
-                  %(default)s
+                  %(opencostDefault)s
                 }
               ) [30d:1h]
             )
@@ -203,7 +204,7 @@ local tbOverride = tbStandardOptions.override;
           avg_over_time(
             sum(
               node_total_hourly_cost{
-                %(default)s
+                %(opencostDefault)s
               }
             ) [30d:1h]
           )
@@ -263,34 +264,29 @@ local tbOverride = tbStandardOptions.override;
             sum(
               sum(
                 container_memory_allocation_bytes{
-                  %(cluster)s,
-                  %(job)s}
+                  %(opencostDefault)s}
               ) by (%(clusterLabel)s, %(namespaceLabel)s, %(instanceLabel)s)
               * on(%(clusterLabel)s, %(instanceLabel)s) group_left()
                 (
                   node_ram_hourly_cost{
-                    %(cluster)s,
-                    %(job)s} / (1024 * 1024 * 1024) * 730
+                    %(opencostDefault)s} / (1024 * 1024 * 1024) * 730
                 )
               +
               sum(
                 container_cpu_allocation{
-                  %(cluster)s,
-                  %(job)s}
+                  %(opencostDefault)s}
               ) by (%(clusterLabel)s, %(namespaceLabel)s, %(instanceLabel)s)
               * on(%(clusterLabel)s, %(instanceLabel)s) group_left()
                 (
                   node_cpu_hourly_cost{
-                    %(cluster)s,
-                    %(job)s} * 730
+                    %(opencostDefault)s} * 730
                 )
             ) by (%(clusterLabel)s, %(namespaceLabel)s)
           )
         ||| % defaultFilters,
 
-        monthlyCostOffset7d: std.strReplace(queries.namespaceMonthlyCost, 'job="$job"}', 'job="$job"} offset 7d'),
-        monthlyCostOffset30d: std.strReplace(queries.namespaceMonthlyCost, 'job="$job"}', 'job="$job"} offset 30d'),
-
+        monthlyCostOffset7d: std.strReplace(queries.namespaceMonthlyCost, defaultFilters.opencostJob + '\n}', defaultFilters.opencostJob + '\n} offset 7d'),
+        monthlyCostOffset30d: std.strReplace(queries.namespaceMonthlyCost, defaultFilters.opencostJob + '\n}', defaultFilters.opencostJob + '\n} offset 30d'),
         costDifference7d: |||
           %s
           /
@@ -310,7 +306,7 @@ local tbOverride = tbStandardOptions.override;
           topk(10,
             sum(
               node_total_hourly_cost{
-                %(default)s
+                %(opencostDefault)s
               }
             ) by (instance_type) * 730
           )
@@ -319,7 +315,7 @@ local tbOverride = tbStandardOptions.override;
         nodeTotalCost: |||
           sum(
             node_total_hourly_cost{
-              %(default)s
+              %(opencostDefault)s
             }
           ) by (node, instance_type, arch)
           * 730
@@ -328,7 +324,7 @@ local tbOverride = tbStandardOptions.override;
         pvTotalGib: |||
           sum(
             kube_persistentvolume_capacity_bytes{
-              %(default)s
+              %(ksmDefault)s
             }
             / 1024 / 1024 / 1024
           ) by (persistentvolume)
@@ -337,14 +333,14 @@ local tbOverride = tbStandardOptions.override;
         pvMonthlyCost: |||
           sum(
             kube_persistentvolume_capacity_bytes{
-              %(default)s
+              %(ksmDefault)s
             }
             / 1024 / 1024 / 1024
           ) by (persistentvolume)
           *
           sum(
             pv_hourly_cost{
-              %(default)s
+              %(opencostDefault)s
             }
             * 730
           ) by (persistentvolume)
@@ -355,7 +351,7 @@ local tbOverride = tbStandardOptions.override;
         hourlyCostStat:
           dashboards.statPanel(
             'Hourly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.hourlyCost,
             graphMode='none',
             decimals=2,
@@ -367,7 +363,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyCostStat:
           dashboards.statPanel(
             'Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyCost,
             graphMode='none',
             decimals=2,
@@ -379,7 +375,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyRamCostStat:
           dashboards.statPanel(
             'Monthly Ram Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyRamCost,
             graphMode='none',
             decimals=2,
@@ -391,7 +387,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyCpuCostStat:
           dashboards.statPanel(
             'Monthly CPU Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyCpuCost,
             graphMode='none',
             decimals=2,
@@ -403,7 +399,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyPVCostStat:
           dashboards.statPanel(
             'Monthly PV Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyPVCost,
             graphMode='none',
             decimals=2,
@@ -415,7 +411,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyGPUCostStat:
           dashboards.statPanel(
             'Monthly GPU Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyGPUCost,
             graphMode='none',
             decimals=2,
@@ -427,7 +423,7 @@ local tbOverride = tbStandardOptions.override;
         hourCostTimeSeries:
           dashboards.timeSeriesPanel(
             'Hourly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.hourlyCost,
             'Hourly Cost',
             description='Hourly cost trend over time showing how infrastructure spending fluctuates throughout the day. Use this to identify cost spikes, correlate costs with workload patterns, and detect autoscaling behavior impact on spending.',
@@ -436,7 +432,7 @@ local tbOverride = tbStandardOptions.override;
         monthlyCostTimeSeries:
           dashboards.timeSeriesPanel(
             'Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.monthlyCost,
@@ -493,7 +489,7 @@ local tbOverride = tbStandardOptions.override;
         resourceCostPieChartPanel:
           dashboards.pieChartPanel(
             'Cost by Resource',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.monthlyCpuCost,
@@ -519,7 +515,7 @@ local tbOverride = tbStandardOptions.override;
         namespaceCostPieChartPanel:
           dashboards.pieChartPanel(
             'Cost by Namespace',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.namespaceMonthlyCost,
             '{{ %s }}' % $._config.namespaceLabel,
             description='Top 10 namespaces by monthly cost showing which teams, applications, or environments consume the most resources. Use this to allocate costs to teams, identify expensive applications, and ensure fair resource distribution across the organization.',
@@ -529,7 +525,7 @@ local tbOverride = tbStandardOptions.override;
         instanceTypeCostPieChartPanel:
           dashboards.pieChartPanel(
             'Cost by Instance Type',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.instanceTypeCost,
             '{{ instance_type }}',
             description='Top 10 instance types by monthly cost showing which VM/node types contribute most to infrastructure spending. This helps evaluate whether your instance type selection is cost-effective and identify opportunities to switch to more economical instance families.',
@@ -539,7 +535,7 @@ local tbOverride = tbStandardOptions.override;
         nodeTable:
           dashboards.tablePanel(
             'Nodes Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.nodeMonthlyCpuCost,
@@ -646,7 +642,7 @@ local tbOverride = tbStandardOptions.override;
             overrides=[
               tbOverride.byName.new('Total Cost') +
               tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('currencyUSD')
+                tbStandardOptions.withUnit($._config.dashboardCurrencyUnit)
               ),
             ]
           ),
@@ -654,7 +650,7 @@ local tbOverride = tbStandardOptions.override;
         namespaceTable:
           dashboards.tablePanel(
             'Namespace Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.namespaceMonthlyCost,
@@ -722,7 +718,12 @@ local tbOverride = tbStandardOptions.override;
                   tbPanelOptions.link.withTitle('Go To Namespace') +
                   tbPanelOptions.link.withType('dashboard') +
                   tbPanelOptions.link.withUrl(
-                    '/d/%s/opencost-namespace?var-cluster=${__data.fields.cluster}&var-job=$job&var-namespace=${__data.fields.Namespace}' % $._config.dashboardIds['opencost-namespace']
+                    (
+                      if $._config.dashboardDynamicJobDiscovery then
+                        '/d/%s/opencost-namespace?var-cluster=${__data.fields.cluster}&var-opencost_job=$opencost_job&var-ksm_job=$ksm_job&var-namespace=${__data.fields.Namespace}'
+                      else
+                        '/d/%s/opencost-namespace?var-cluster=${__data.fields.cluster}&var-namespace=${__data.fields.Namespace}'
+                    ) % $._config.dashboardIds['opencost-namespace']
                   ) +
                   tbPanelOptions.link.withTargetBlank(true)
                 )

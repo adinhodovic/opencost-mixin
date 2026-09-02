@@ -10,8 +10,13 @@ local annotation = g.dashboard.annotation;
       __requires: [],
     },
 
+    // Whether to determine the job labels via query in the dashboards. Set to false to use the values of openCostSelector and kubeStateMetricsSelector.
+    dashboardDynamicJobDiscovery: true,
+
     openCostSelector: 'job="opencost"',
     kubeStateMetricsSelector: 'job="kube-state-metrics"',
+
+    dashboardCurrencyUnit: 'currencyUSD',
 
     // Default datasource name
     datasourceName: 'default',

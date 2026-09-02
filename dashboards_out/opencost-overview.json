@@ -74,7 +74,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n)\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) by (persistentvolume)\n)\n",
+               "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n  }\n)\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n    }\n  ) by (persistentvolume)\n)\n",
                "instant": false
             }
          ],
@@ -122,7 +122,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "(sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n)\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) by (persistentvolume)\n)\n) * 730",
+               "expr": "(sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n  }\n)\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n    }\n  ) by (persistentvolume)\n)\n) * 730",
                "instant": false
             }
          ],
@@ -170,7 +170,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n",
+               "expr": "sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (node)\n  * 730\n)\n",
                "instant": false
             }
          ],
@@ -218,7 +218,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n",
+               "expr": "sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (node)\n  * 730\n)\n",
                "instant": false
             }
          ],
@@ -266,7 +266,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  node_gpu_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n) * 730\n",
+               "expr": "sum(\n  node_gpu_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n  }\n) * 730\n",
                "instant": false
             }
          ],
@@ -314,7 +314,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n",
+               "expr": "sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n",
                "instant": false
             }
          ],
@@ -365,7 +365,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n",
+               "expr": "sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (node)\n  * 730\n)\n",
                "instant": true,
                "legendFormat": "CPU"
             },
@@ -374,7 +374,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n",
+               "expr": "sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (node)\n  * 730\n)\n",
                "instant": true,
                "legendFormat": "RAM"
             },
@@ -383,7 +383,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n",
+               "expr": "sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n",
                "instant": true,
                "legendFormat": "PV"
             },
@@ -392,7 +392,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  node_gpu_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n) * 730\n",
+               "expr": "sum(\n  node_gpu_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n  }\n) * 730\n",
                "instant": true,
                "legendFormat": "GPU"
             }
@@ -444,7 +444,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "topk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\n        job=\"$job\"}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\n        job=\"$job\"}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} * 730\n      )\n  ) by (cluster, namespace)\n)\n",
+               "expr": "topk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} * 730\n      )\n  ) by (cluster, namespace)\n)\n",
                "instant": true,
                "legendFormat": "{{ namespace }}"
             }
@@ -496,7 +496,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "topk(10,\n  sum(\n    node_total_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) by (instance_type) * 730\n)\n",
+               "expr": "topk(10,\n  sum(\n    node_total_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n    }\n  ) by (instance_type) * 730\n)\n",
                "instant": true,
                "legendFormat": "{{ instance_type }}"
             }
@@ -551,7 +551,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n)\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) by (persistentvolume)\n)\n",
+               "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n  }\n)\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n    }\n  ) by (persistentvolume)\n)\n",
                "legendFormat": "Hourly Cost"
             }
          ],
@@ -605,7 +605,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "(sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n)\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) by (persistentvolume)\n)\n) * 730",
+               "expr": "(sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n  }\n)\n+\nsum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n  sum(\n    pv_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n    }\n  ) by (persistentvolume)\n)\n) * 730",
                "interval": "30m",
                "legendFormat": "Monthly Cost"
             }
@@ -660,7 +660,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "(\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) [7d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n    node_total_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) [7d:1h]\n)\n",
+               "expr": "(\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) [7d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n    node_total_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n    }\n  ) [7d:1h]\n)\n",
                "interval": "30m",
                "legendFormat": "Current hourly cost vs. 7-day average"
             },
@@ -670,7 +670,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "(\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) [30d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n    node_total_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) [30d:1h]\n)\n",
+               "expr": "(\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n      node_total_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) [30d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n    node_total_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n    }\n  ) [30d:1h]\n)\n",
                "interval": "30m",
                "legendFormat": "Current hourly cost vs. 30-day average"
             }
@@ -725,7 +725,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "(\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n)\n",
+               "expr": "(\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n      resource=\"cpu\",\n      unit=\"core\"\n    }\n  ) by (node)\n  * on(node) group_left()\n    sum(\n      node_cpu_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n)\n",
                "interval": "30m",
                "legendFormat": "CPU Cost vs. 30-day average"
             },
@@ -735,7 +735,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "(\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n)\n",
+               "expr": "(\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [1d:1h]\n  )\n  -\n  avg_over_time(\n    sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n  )\n)\n/\navg_over_time(\n  sum(\n  sum(\n    kube_node_status_capacity{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n      resource=\"memory\",\n      unit=\"byte\"\n    }\n  ) by (node)\n  / (1024 * 1024 * 1024)\n  * on(node) group_left()\n    sum(\n      node_ram_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (node)\n  * 730\n)\n [30d:1h]\n)\n",
                "interval": "30m",
                "legendFormat": "RAM Cost vs. 30-day average"
             },
@@ -745,7 +745,7 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "(\n  avg_over_time(\n    (sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n) [1d:1h]\n  )\n  -\n  avg_over_time(\n    (sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n) [30d:1h]\n  )\n)\n/\navg_over_time(\n  (sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n) [30d:1h]\n)\n",
+               "expr": "(\n  avg_over_time(\n    (sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n) [1d:1h]\n  )\n  -\n  avg_over_time(\n    (sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n) [30d:1h]\n  )\n)\n/\navg_over_time(\n  (sum(\n  sum(\n    kube_persistentvolume_capacity_bytes{\n      cluster=\"$cluster\",\njob=\"$ksm_job\"\n\n    } / (1024 * 1024 * 1024)\n  ) by (persistentvolume)\n  * on(persistentvolume) group_left()\n    sum(\n      pv_hourly_cost{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n      }\n    ) by (persistentvolume)\n) * 730\n) [30d:1h]\n)\n",
                "interval": "30m",
                "legendFormat": "PV Cost vs. 30-day average"
             }
@@ -806,7 +806,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  kube_node_status_capacity{\n    cluster=\"$cluster\",\njob=\"$job\"\n,\n    resource=\"cpu\",\n    unit=\"core\"\n  }\n) by (node)\n* on(node) group_left(cluster, instance_type, arch)\n  sum(\n    node_cpu_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n,\n    }\n  ) by (node, instance_type, arch)\n* 730\n",
+               "expr": "sum(\n  kube_node_status_capacity{\n    cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n    resource=\"cpu\",\n    unit=\"core\"\n  }\n) by (node)\n* on(node) group_left(cluster, instance_type, arch)\n  sum(\n    node_cpu_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$opencost_job\"\n,\n    }\n  ) by (node, instance_type, arch)\n* 730\n",
                "format": "table",
                "instant": true
             },
@@ -815,7 +815,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  kube_node_status_capacity{\n    cluster=\"$cluster\",\njob=\"$job\"\n,\n    resource=\"memory\",\n    unit=\"byte\"\n  }\n) by (node)\n/ (1024 * 1024 * 1024)\n* on(node) group_left(cluster, instance_type, arch)\n  sum(\n    node_ram_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$job\"\n\n    }\n  ) by (node, instance_type, arch)\n* 730\n",
+               "expr": "sum(\n  kube_node_status_capacity{\n    cluster=\"$cluster\",\njob=\"$ksm_job\"\n,\n    resource=\"memory\",\n    unit=\"byte\"\n  }\n) by (node)\n/ (1024 * 1024 * 1024)\n* on(node) group_left(cluster, instance_type, arch)\n  sum(\n    node_ram_hourly_cost{\n      cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n    }\n  ) by (node, instance_type, arch)\n* 730\n",
                "format": "table",
                "instant": true
             },
@@ -824,7 +824,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n) by (node, instance_type, arch)\n* 730\n",
+               "expr": "sum(\n  node_total_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n  }\n) by (node, instance_type, arch)\n* 730\n",
                "format": "table",
                "instant": true
             }
@@ -916,7 +916,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  kube_persistentvolume_capacity_bytes{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n  / 1024 / 1024 / 1024\n) by (persistentvolume)\n",
+               "expr": "sum(\n  kube_persistentvolume_capacity_bytes{\n    cluster=\"$cluster\",\njob=\"$ksm_job\"\n\n  }\n  / 1024 / 1024 / 1024\n) by (persistentvolume)\n",
                "format": "table",
                "instant": true
             },
@@ -925,7 +925,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  kube_persistentvolume_capacity_bytes{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n  / 1024 / 1024 / 1024\n) by (persistentvolume)\n*\nsum(\n  pv_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$job\"\n\n  }\n  * 730\n) by (persistentvolume)\n",
+               "expr": "sum(\n  kube_persistentvolume_capacity_bytes{\n    cluster=\"$cluster\",\njob=\"$ksm_job\"\n\n  }\n  / 1024 / 1024 / 1024\n) by (persistentvolume)\n*\nsum(\n  pv_hourly_cost{\n    cluster=\"$cluster\",\njob=\"$opencost_job\"\n\n  }\n  * 730\n) by (persistentvolume)\n",
                "format": "table",
                "instant": true
             }
@@ -1058,7 +1058,7 @@
                               "targetBlank": true,
                               "title": "Go To Namespace",
                               "type": "dashboard",
-                              "url": "/d/opencost-mixin-namespace-jkwq/opencost-namespace?var-cluster=${__data.fields.cluster}&var-job=$job&var-namespace=${__data.fields.Namespace}"
+                              "url": "/d/opencost-mixin-namespace-jkwq/opencost-namespace?var-cluster=${__data.fields.cluster}&var-opencost_job=$opencost_job&var-ksm_job=$ksm_job&var-namespace=${__data.fields.Namespace}"
                            }
                         ]
                      }
@@ -1091,7 +1091,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "topk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\n        job=\"$job\"}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\n        job=\"$job\"}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} * 730\n      )\n  ) by (cluster, namespace)\n)\n",
+               "expr": "topk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} * 730\n      )\n  ) by (cluster, namespace)\n)\n",
                "format": "table",
                "instant": true
             },
@@ -1100,7 +1100,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "topk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\n        job=\"$job\"}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\n        job=\"$job\"}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} * 730\n      )\n  ) by (cluster, namespace)\n)\n\n/\ntopk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\n        job=\"$job\"} offset 7d\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} offset 7d / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\n        job=\"$job\"} offset 7d\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} offset 7d * 730\n      )\n  ) by (cluster, namespace)\n)\n\n* 100\n- 100\n",
+               "expr": "topk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} * 730\n      )\n  ) by (cluster, namespace)\n)\n\n/\ntopk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n} offset 7d\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} offset 7d / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n} offset 7d\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} offset 7d * 730\n      )\n  ) by (cluster, namespace)\n)\n\n* 100\n- 100\n",
                "format": "table",
                "instant": true
             },
@@ -1109,7 +1109,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "topk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\n        job=\"$job\"}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\n        job=\"$job\"}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} * 730\n      )\n  ) by (cluster, namespace)\n)\n\n/\ntopk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\n        job=\"$job\"} offset 30d\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} offset 30d / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\n        job=\"$job\"} offset 30d\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\n          job=\"$job\"} offset 30d * 730\n      )\n  ) by (cluster, namespace)\n)\n\n* 100\n- 100\n",
+               "expr": "topk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n}\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} * 730\n      )\n  ) by (cluster, namespace)\n)\n\n/\ntopk(10,\n  sum(\n    sum(\n      container_memory_allocation_bytes{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n} offset 30d\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_ram_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} offset 30d / (1024 * 1024 * 1024) * 730\n      )\n    +\n    sum(\n      container_cpu_allocation{\n        cluster=\"$cluster\",\njob=\"$opencost_job\"\n} offset 30d\n    ) by (cluster, namespace, instance)\n    * on(cluster, instance) group_left()\n      (\n        node_cpu_hourly_cost{\n          cluster=\"$cluster\",\njob=\"$opencost_job\"\n} offset 30d * 730\n      )\n  ) by (cluster, namespace)\n)\n\n* 100\n- 100\n",
                "format": "table",
                "instant": true
             }
@@ -1181,10 +1181,24 @@
                "uid": "${datasource}"
             },
             "includeAll": false,
-            "label": "Job",
+            "label": "OpenCost Job",
             "multi": false,
-            "name": "job",
+            "name": "opencost_job",
             "query": "label_values(opencost_build_info{cluster=\"$cluster\"}, job)",
+            "refresh": 2,
+            "sort": 1,
+            "type": "query"
+         },
+         {
+            "datasource": {
+               "type": "prometheus",
+               "uid": "${datasource}"
+            },
+            "includeAll": false,
+            "label": "KSM Job",
+            "multi": false,
+            "name": "ksm_job",
+            "query": "label_values(kube_node_status_capacity{cluster=\"$cluster\"}, job)",
             "refresh": 2,
             "sort": 1,
             "type": "query"

@@ -23,14 +23,15 @@ local tbQueryOptions = tablePanel.queryOptions;
         for link in mixinUtils.dashboards.dashboardLinks('OpenCost', $._config)
       ];
 
-      local variables = [
+      local variables = std.prune([
         defaultVariables.datasource,
         defaultVariables.cluster,
-        defaultVariables.job,
+        defaultVariables.opencostJob,
+        defaultVariables.ksmJob,
         defaultVariables.namespace,
         defaultVariables.workloadType,
         defaultVariables.workload,
-      ];
+      ]);
 
       local defaultFilters = util.filters($._config);
       local workloadFilters = defaultFilters.withNamespaceWorkload;
@@ -120,15 +121,14 @@ local tbQueryOptions = tablePanel.queryOptions;
               (
                 sum(
                   container_memory_allocation_bytes{
-                    %(clusterLabel)s="$cluster",
-                    %(namespaceLabel)s="$namespace"
+                    %(opencostWithNamespace)s
                   }
                 ) by (%(clusterLabel)s, %(namespaceLabel)s, %(podLabel)s, %(instanceLabel)s)
                 * on(%(clusterLabel)s, %(instanceLabel)s) group_left()
                 (
                   avg(
                     node_ram_hourly_cost{
-                      %(clusterLabel)s="$cluster"
+                      %(opencostDefault)s
                     }
                   ) by (%(clusterLabel)s, %(instanceLabel)s) / (1024 * 1024 * 1024) * 730
                 )
@@ -137,15 +137,14 @@ local tbQueryOptions = tablePanel.queryOptions;
               (
                 sum(
                   container_cpu_allocation{
-                    %(clusterLabel)s="$cluster",
-                    %(namespaceLabel)s="$namespace"
+                    %(opencostWithNamespace)s
                   }
                 ) by (%(clusterLabel)s, %(namespaceLabel)s, %(podLabel)s, %(instanceLabel)s)
                 * on(%(clusterLabel)s, %(instanceLabel)s) group_left()
                 (
                   avg(
                     node_cpu_hourly_cost{
-                      %(clusterLabel)s="$cluster"
+                      %(opencostDefault)s
                     }
                   ) by (%(clusterLabel)s, %(instanceLabel)s) * 730
                 )
@@ -154,15 +153,14 @@ local tbQueryOptions = tablePanel.queryOptions;
               (
                 sum(
                   container_gpu_allocation{
-                    %(clusterLabel)s="$cluster",
-                    %(namespaceLabel)s="$namespace"
+                    %(opencostWithNamespace)s
                   }
                 ) by (%(clusterLabel)s, %(namespaceLabel)s, %(podLabel)s, %(instanceLabel)s)
                 * on(%(clusterLabel)s, %(instanceLabel)s) group_left()
                 (
                   avg(
                     node_gpu_hourly_cost{
-                      %(clusterLabel)s="$cluster"
+                      %(opencostDefault)s
                     }
                   ) by (%(clusterLabel)s, %(instanceLabel)s) * 730
                 )
@@ -170,10 +168,10 @@ local tbQueryOptions = tablePanel.queryOptions;
             )
             * on(%(clusterLabel)s, %(namespaceLabel)s, %(podLabel)s) group_left(workload_type, workload)
             max by (%(clusterLabel)s, %(namespaceLabel)s, %(podLabel)s, workload_type, workload) (
-                namespace_workload_pod:kube_pod_owner:relabel{%(workloadFilters)s}
+                namespace_workload_pod:kube_pod_owner:relabel{%(withNamespaceWorkload)s}
               )
           ) by (%(podLabel)s)
-        ||| % ($._config { workloadFilters: workloadFilters }),
+        ||| % defaultFilters,
 
       };
 
@@ -181,7 +179,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         hourlyCostStat:
           dashboards.statPanel(
             'Hourly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.hourlyCost,
             graphMode='none',
             decimals=2,
@@ -191,7 +189,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         dailyCostStat:
           dashboards.statPanel(
             'Daily Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.dailyCost,
             graphMode='none',
             decimals=2,
@@ -201,7 +199,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyCostStat:
           dashboards.statPanel(
             'Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyCost,
             graphMode='none',
             decimals=2,
@@ -211,7 +209,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyRamCostStat:
           dashboards.statPanel(
             'Monthly Ram Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyRamCost,
             graphMode='none',
             decimals=2,
@@ -221,7 +219,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyCpuCostStat:
           dashboards.statPanel(
             'Monthly CPU Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyCpuCost,
             graphMode='none',
             decimals=2,
@@ -231,7 +229,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyPVCostStat:
           dashboards.statPanel(
             'Monthly PV Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyPVCost,
             graphMode='none',
             decimals=2,
@@ -241,7 +239,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyGPUCostStat:
           dashboards.statPanel(
             'Monthly GPU Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyGPUCost,
             graphMode='none',
             decimals=2,
@@ -251,7 +249,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyCostByWorkloadTimeSeries:
           dashboards.timeSeriesPanel(
             'Monthly Cost by Workload',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: 'topk(10, %s)' % queries.monthlyCostByWorkload,
@@ -266,7 +264,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         monthlyCostByResourceTimeSeries:
           dashboards.timeSeriesPanel(
             'Monthly Cost by Resource',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: 'sum((%s) * 730) or vector(0)' % queries.hourlyRamCostByWorkload,
@@ -296,7 +294,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         resourceCostPieChart:
           dashboards.pieChartPanel(
             'Cost by Resource',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.monthlyCpuCost,
@@ -322,7 +320,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         workloadCostPieChart:
           dashboards.pieChartPanel(
             'Cost by Workload',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             'topk(10, %s)' % queries.monthlyCostByWorkload,
             '{{ workload_type }} / {{ workload }}',
             values=['percent', 'value'],
@@ -332,7 +330,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         workloadTypeCostPieChart:
           dashboards.pieChartPanel(
             'Cost by Workload Type',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             queries.monthlyCostByWorkloadType,
             '{{ workload_type }}',
             values=['percent', 'value'],
@@ -342,7 +340,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         workloadTable:
           dashboards.tablePanel(
             'Workload Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.monthlyRamCostByWorkload,
@@ -405,7 +403,7 @@ local tbQueryOptions = tablePanel.queryOptions;
         pvcTable:
           dashboards.tablePanel(
             'Persistent Volume Claims Monthly Cost',
-            'currencyUSD',
+            $._config.dashboardCurrencyUnit,
             [
               {
                 expr: queries.pvcMonthlyCostByClaim,
