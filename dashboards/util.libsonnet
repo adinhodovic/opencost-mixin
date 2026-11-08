@@ -1,11 +1,17 @@
 local g = import 'github.com/grafana/grafonnet/gen/grafonnet-latest/main.libsonnet';
 
 local dashboard = g.dashboard;
+local stat = g.panel.stat;
+local timeSeries = g.panel.timeSeries;
 
 local variable = dashboard.variable;
 local custom = variable.custom;
 local datasource = variable.datasource;
 local query = variable.query;
+local stStandardOptions = stat.standardOptions;
+local tsCustom = timeSeries.fieldConfig.defaults.custom;
+local tsLegend = timeSeries.options.legend;
+local tsStandardOptions = timeSeries.standardOptions;
 
 local extractJobName(selector) =
   local cleaned = std.strReplace(selector, 'job="', '');
@@ -177,4 +183,19 @@ local extractJobName(selector) =
       query.generalOptions.showOnDashboard.withLabelAndValue() +
       query.withSort(type='alphabetical'),
   },
+
+  efficiencyThresholdSteps(config):: [
+    stStandardOptions.threshold.step.withColor('red'),
+    stStandardOptions.threshold.step.withValue(config.alerts.efficiency.minEfficiencyThreshold) +
+    stStandardOptions.threshold.step.withColor('green'),
+  ],
+
+  efficiencyStatThresholds(config)::
+    stStandardOptions.color.withMode('thresholds') +
+    stStandardOptions.thresholds.withSteps(self.efficiencyThresholdSteps(config)),
+
+  efficiencyTimeSeriesThresholdLine(config)::
+    tsStandardOptions.thresholds.withSteps(self.efficiencyThresholdSteps(config)) +
+    tsCustom.thresholdsStyle.withMode('line') +
+    tsLegend.withSortDesc(false),
 }
