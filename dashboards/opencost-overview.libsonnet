@@ -116,6 +116,10 @@ local tbOverride = tbStandardOptions.override;
             node_gpu_hourly_cost{
               %(opencostDefault)s
             }
+            *
+            node_gpu_count{
+              %(opencostDefault)s
+            }
           ) * 730
         ||| % defaultFilters,
 
